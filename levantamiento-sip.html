@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<!--
+================================================================================
+  Levantamiento SIP+
+  Aplicación de levantamiento de equipamiento informático, red y competencias del personal para la implementación del Sistema Informático Perinatal Plus (SIP+).
+
+  Copyright (c) 2026 Darien Gómez. Todos los derechos reservados.
+
+  OBRA PROTEGIDA POR DERECHO DE AUTOR
+  Protegida por la Ley 65-00 sobre Derecho de Autor de la República Dominicana
+  y por los tratados internacionales aplicables (Convenio de Berna).
+
+  El código fuente, la estructura, la interfaz, el diseño y los textos de esta
+  aplicación son obra original de Darien Gómez.
+
+  Queda prohibida su reproducción, distribución, comunicación pública,
+  transformación, descompilación o uso total o parcial, por cualquier medio o
+  procedimiento, sin autorización previa y por escrito del titular.
+
+  Esta herramienta es propiedad del autor y se pone a disposición de terceros
+  únicamente mediante licencia de uso expresa. Su entrega o utilización en el
+  marco de un proyecto no transfiere la titularidad de los derechos.
+
+  Contacto para licenciamiento: Darien Gómez
+================================================================================
+-->
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="author" content="Darien Gómez">
+<meta name="copyright" content="Copyright (c) 2026 Darien Gómez. Todos los derechos reservados.">
+<meta name="description" content="Aplicación de levantamiento de equipamiento informático, infraestructura de red y competencias del personal para la implementación del Sistema Informático Perinatal Plus (SIP+).">
+<meta name="rights" content="Obra protegida - Ley 65-00 (Rep. Dominicana). Prohibida su reproduccion o distribucion sin autorizacion escrita del titular.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Levantamiento SIP+ · Dajabón / Elías Piña</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+:root{
+  --ink:#12233A; --paper:#F5F1EA; --clinic:#8A1F3D; --teal:#1F6F78;
+  --teal-b:#2A9D8F; --gold:#C8964A; --line:rgba(18,35,58,.14);
+  --ok:#2A9D8F; --warn:#C8964A; --bad:#C0392B;
+  --mono:'IBM Plex Mono',monospace; --sans:'Archivo',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.45;padding-bottom:90px}
+header.app{position:sticky;top:0;z-index:40;background:var(--ink);color:#fff;
+  padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+header.app h1{font-size:1.02rem;font-weight:800;letter-spacing:-.01em}
+header.app .sub{font-family:var(--mono);font-size:10px;color:#9fc3c9;letter-spacing:.08em}
+.badge-count{font-family:var(--mono);font-size:11px;background:var(--clinic);
+  padding:4px 10px;border-radius:20px;font-weight:600}
+main{max-width:760px;margin:0 auto;padding:16px}
+
+/* ---- botones ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:var(--sans);font-weight:700;font-size:.95rem;border:none;border-radius:8px;
+  padding:13px 18px;cursor:pointer;transition:transform .08s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--clinic);color:#fff}
+.btn-teal{background:var(--teal);color:#fff}
+.btn-ghost{background:transparent;color:var(--clinic);border:1.5px solid var(--clinic)}
+.btn-sm{padding:8px 12px;font-size:.85rem;border-radius:6px}
+.btn-block{width:100%}
+.btn-danger{background:transparent;color:var(--bad);border:1.5px solid var(--bad)}
+
+/* ---- lista de centros ---- */
+.center-card{background:#fff;border:1px solid var(--line);border-radius:10px;
+  padding:16px;margin-bottom:12px;cursor:pointer;position:relative}
+.center-card h3{font-size:1.05rem;font-weight:800;margin-bottom:2px}
+.center-card .meta{font-family:var(--mono);font-size:10.5px;color:var(--teal);letter-spacing:.04em}
+.coverage{display:flex;gap:5px;margin-top:10px}
+.coverage .seg{flex:1;height:6px;border-radius:3px;background:#E4DED2}
+.coverage .seg.done{background:var(--teal-b)}
+.coverage-label{font-family:var(--mono);font-size:9.5px;color:#7a8593;margin-top:5px;
+  display:flex;justify-content:space-between}
+.empty{text-align:center;padding:48px 20px;color:#7a8593}
+.empty .big{font-size:2.4rem;margin-bottom:10px}
+
+/* ---- formulario ---- */
+.section-nav{display:flex;gap:6px;margin:14px 0;overflow-x:auto;padding-bottom:4px}
+.section-nav button{flex:1;min-width:82px;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.05em;padding:10px 6px;border-radius:8px;border:1.5px solid var(--line);
+  background:#fff;color:var(--ink);font-weight:600;cursor:pointer;white-space:nowrap}
+.section-nav button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.section-nav button.filled{border-color:var(--teal-b);color:var(--teal)}
+.section-nav button.filled.active{background:var(--teal);color:#fff}
+.panel{display:none}.panel.show{display:block}
+fieldset{border:1px solid var(--line);border-radius:10px;background:#fff;
+  padding:16px;margin-bottom:14px}
+legend{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--clinic);font-weight:600;padding:0 8px}
+label{display:block;font-size:.82rem;font-weight:700;margin:12px 0 4px;color:#33445a}
+label:first-of-type{margin-top:0}
+input[type=text],input[type=number],input[type=date],input[type=tel],select,textarea{
+  width:100%;padding:12px;border:1.5px solid var(--line);border-radius:8px;
+  font-family:var(--sans);font-size:16px;background:#FBFAF7;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--teal-b);border-color:var(--teal-b)}
+textarea{min-height:70px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip-opt{border:1.5px solid var(--line);border-radius:20px;padding:9px 15px;
+  font-size:.85rem;font-weight:600;cursor:pointer;background:#fff;user-select:none}
+.chip-opt.sel{background:var(--teal);color:#fff;border-color:var(--teal)}
+.chip-opt.sel.neg{background:var(--bad);border-color:var(--bad)}
+.chip-opt.sel.mid{background:var(--gold);border-color:var(--gold)}
+
+/* ---- items dinámicos (equipos / personal) ---- */
+.item-card{border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:8px;
+  background:#FBFAF7;padding:12px;margin-bottom:10px;position:relative}
+.item-card .del{position:absolute;top:8px;right:8px;background:none;border:none;
+  color:var(--bad);font-size:1.1rem;cursor:pointer;font-weight:800;padding:4px 8px}
+.item-card h4{font-size:.9rem;font-weight:800;margin-bottom:6px;color:var(--teal)}
+
+/* ---- barra inferior ---- */
+.bottombar{position:fixed;bottom:0;left:0;right:0;background:#fff;
+  border-top:1px solid var(--line);padding:10px 14px;display:flex;gap:8px;z-index:40;
+  max-width:100%;box-shadow:0 -4px 16px rgba(18,35,58,.08)}
+.bottombar .btn{flex:1}
+
+/* ---- toast ---- */
+#toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;font-size:.85rem;font-weight:600;padding:11px 20px;
+  border-radius:24px;opacity:0;transition:all .25s;z-index:60;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---- login ---- */
+#lockScreen{position:fixed;inset:0;z-index:100;background:var(--ink);
+  display:flex;align-items:center;justify-content:center;padding:24px}
+.lock-box{width:100%;max-width:360px;text-align:center}
+.lock-box .logo{font-size:2.6rem;margin-bottom:8px}
+.lock-box h2{color:#fff;font-size:1.3rem;font-weight:800;margin-bottom:4px}
+.lock-box .sub{font-family:var(--mono);font-size:10.5px;color:#9fc3c9;
+  letter-spacing:.1em;margin-bottom:26px}
+.lock-box input{width:100%;padding:14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.08);color:#fff;font-size:18px;text-align:center;
+  font-family:var(--mono);letter-spacing:.2em;margin-bottom:12px}
+.lock-box input::placeholder{color:#6b7f95;letter-spacing:.05em;font-family:var(--sans)}
+.lock-box input:focus{outline:2px solid var(--teal-b)}
+.lock-box .msg{font-size:.82rem;color:#e8a0a0;min-height:20px;margin-bottom:8px}
+.lock-box .hint{font-size:.78rem;color:#8fa2b5;margin-top:16px;line-height:1.5}
+.lock-box .reset-link{color:#c98;background:none;border:none;font-size:.78rem;
+  text-decoration:underline;cursor:pointer;margin-top:14px}
+.btn-lock{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;
+  border-radius:6px;padding:6px 10px;font-size:.75rem;font-weight:700;cursor:pointer;margin-left:8px}
+
+.lock-box .links{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.lock-box .links button{background:none;border:none;color:#9fc3c9;font-size:.8rem;
+  text-decoration:underline;cursor:pointer}
+.rc-display{background:rgba(42,157,143,.15);border:1.5px dashed var(--teal-b);
+  border-radius:10px;padding:18px;margin:14px 0}
+.rc-display .code{font-family:var(--mono);font-size:1.35rem;font-weight:700;
+  color:#7ED3B2;letter-spacing:.12em}
+.rc-display p{color:#c2cdd8;font-size:.8rem;margin-top:10px;line-height:1.5;text-align:left}
+#modal{position:fixed;inset:0;z-index:90;background:rgba(18,35,58,.55);
+  display:none;align-items:flex-end;justify-content:center}
+#modal.show{display:flex}
+.modal-box{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:760px;
+  padding:20px;max-height:82vh;overflow-y:auto}
+.modal-box h3{font-size:1.1rem;font-weight:800;margin-bottom:14px;color:var(--clinic)}
+.modal-box input{margin-bottom:8px}
+
+/* ---- fotos ---- */
+.fotobar{display:flex;align-items:center;gap:10px;margin-top:10px}
+.thumb{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.fotodel{background:none;border:none;color:var(--bad);font-weight:800;font-size:1rem;cursor:pointer;padding:4px 8px}
+
+
+.copyright-note{font-family:var(--mono);font-size:9px;color:#8fa2b5;text-align:center;
+  margin-top:20px;line-height:1.6;letter-spacing:.02em}
+.copyright-note b{color:#9fc3c9}
+.copyright-foot{font-family:var(--mono);font-size:9px;color:#8a95a3;text-align:center;
+  margin-top:22px;padding-top:12px;border-top:1px solid var(--line);line-height:1.6}
+
+/* ---- print (reporte PDF) ---- */
+#printArea{display:none}
+@media print{
+  body>*{display:none!important}
+  #printArea{display:block!important;font-family:'Archivo',sans-serif;color:#12233A}
+  .pr-page{page-break-after:always;padding:6mm 2mm}
+  .pr-page:last-child{page-break-after:auto}
+  .pr-head{border-bottom:3px solid #8A1F3D;padding-bottom:8px;margin-bottom:14px}
+  .pr-head h1{font-size:15pt;font-weight:900}
+  .pr-head .sub{font-size:9pt;color:#1F6F78;font-family:'IBM Plex Mono',monospace}
+  .pr-sec{font-size:10.5pt;font-weight:800;color:#8A1F3D;margin:12px 0 6px;
+    border-bottom:1px solid #ccc;padding-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
+  table.pr{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:8px}
+  table.pr th{background:#12233A;color:#fff;padding:5px 6px;text-align:left;font-size:8pt}
+  table.pr td{border:1px solid #bbb;padding:4px 6px;vertical-align:top}
+  .pr-kv{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;font-size:9pt}
+  .pr-kv div b{color:#1F6F78}
+  .pr-foot{margin-top:10px;font-size:8pt;color:#666;font-family:'IBM Plex Mono',monospace}
+  .pr-gal{display:flex;flex-wrap:wrap;gap:4mm;margin-top:2mm}
+  .pr-ph{width:44mm;font-size:7pt;color:#333}
+  .pr-ph img{width:44mm;height:33mm;object-fit:cover;border:1px solid #999;display:block;margin-bottom:1mm}
+}
+</style>
+</head>
+<body>
+
+<div id="lockScreen">
+  <div class="lock-box">
+    <div class="logo">🔐</div>
+    <h2 id="lockTitle">Levantamiento SIP+</h2>
+    <div class="sub">ACCESO PROTEGIDO · DATOS CIFRADOS</div>
+
+    <!-- login -->
+    <div id="authLogin">
+      <input type="text" id="li_user" placeholder="Usuario" autocomplete="off" style="text-align:left;font-family:var(--sans);letter-spacing:normal">
+      <input type="password" id="li_pass" placeholder="Contraseña" style="text-align:left;font-family:var(--sans);letter-spacing:normal">
+      <div class="msg" id="li_msg"></div>
+      <button class="btn btn-teal btn-block" onclick="doLogin()">Iniciar sesión</button>
+      <div class="links"><button onclick="showAuth('reset')">Olvidé mi contraseña</button></div>
+    </div>
+
+    <!-- registro inicial -->
+    <div id="authSetup" style="display:none">
+      <input type="text" id="su_user" placeholder="Nombre de usuario" autocomplete="off" style="text-align:left;font-family:var(--sans);letter-spacing:normal">
+      <input type="password" id="su_pass" placeholder="Contraseña (mín. 6)" style="text-align:left;font-family:var(--sans);letter-spacing:normal">
+      <input type="password" id="su_conf" placeholder="Confirmar contraseña" style="text-align:left;font-family:var(--sans);letter-spacing:normal">
+      <input type="password" id="su_old" placeholder="Clave de la versión anterior (opcional)" style="display:none;text-align:left;font-family:var(--sans);letter-spacing:normal">
+      <div class="msg" id="su_msg"></div>
+      <button class="btn btn-teal btn-block" onclick="doSetup()">Crear cuenta y entrar</button>
+      <div class="hint" id="su_hint">Esta será la primera cuenta de la aplicación. Los datos del levantamiento quedan cifrados; al crear la cuenta recibirás un <b style="color:#7ED3B2">código de recuperación</b> para restablecer tu contraseña si la olvidas.</div>
+    </div>
+
+    <!-- código de recuperación -->
+    <div id="authRC" style="display:none">
+      <div class="rc-display">
+        <div class="code" id="rcCode">----‑----‑----</div>
+        <p><b>Guarda este código ahora</b> (foto, papel o gestor de claves). Es la única forma de restablecer tu contraseña sin perder los datos. No se volverá a mostrar.</p>
+      </div>
+      <button class="btn btn-teal btn-block" onclick="rcConfirmed()">Ya lo guardé, continuar</button>
+    </div>
+
+    <!-- restablecer -->
+    <div id="authReset" style="display:none">
+      <input type="text" id="rs_user" placeholder="Usuario" autocomplete="off" style="text-align:left;font-family:var(--sans);letter-spacing:normal">
+      <input type="text" id="rs_code" placeholder="Código de recuperación (XXXX-XXXX-XXXX)" autocomplete="off">
+      <input type="password" id="rs_pass" placeholder="Nueva contraseña (mín. 6)" style="text-align:left;font-family:var(--sans);letter-spacing:normal">
+      <input type="password" id="rs_conf" placeholder="Confirmar nueva contraseña" style="text-align:left;font-family:var(--sans);letter-spacing:normal">
+      <div class="msg" id="rs_msg"></div>
+      <button class="btn btn-teal btn-block" onclick="doReset()">Restablecer contraseña</button>
+      <div class="links"><button onclick="showAuth('login')">← Volver al inicio de sesión</button></div>
+    </div>
+
+    <div class="copyright-note">
+      © 2026 <b>Darien Gómez</b> · Todos los derechos reservados<br>
+      Obra protegida — Ley 65-00 de Derecho de Autor (Rep. Dominicana)<br>
+      Uso autorizado únicamente mediante licencia del titular
+    </div>
+  </div>
+</div>
+
+<header class="app">
+  <div>
+    <h1>Levantamiento SIP+</h1>
+    <div class="sub" id="hdrUser">DAJABÓN · ELÍAS PIÑA — OPS/OMS</div>
+  </div>
+  <div style="display:flex;align-items:center">
+    <span class="badge-count" id="countBadge">0 centros</span>
+    <button class="btn-lock" onclick="openSettings()" title="Cuenta">⚙</button>
+    <button class="btn-lock" onclick="logout()" title="Cerrar sesión">⏻</button>
+  </div>
+</header>
+
+<main id="viewList">
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="btn btn-primary btn-block" onclick="newCenter()">＋ Nuevo centro</button>
+  </div>
+  <div id="centerList"></div>
+  <div style="display:flex;gap:8px;margin-top:18px">
+    <button class="btn btn-teal btn-block" onclick="exportXLSX()">⬇ Excel</button>
+    <button class="btn btn-ghost btn-block" onclick="exportPDF()">⬇ PDF</button>
+  </div>
+  <p style="font-family:var(--mono);font-size:10px;color:#7a8593;text-align:center;margin-top:14px">
+    Los datos se guardan automáticamente en este dispositivo.
+  </p>
+</main>
+
+<main id="viewForm" style="display:none">
+  <button class="btn btn-sm btn-ghost" onclick="backToList()" style="margin-bottom:6px">← Centros</button>
+  <div class="section-nav" id="secNav">
+    <button data-sec="0" class="active" onclick="showSec(0)">1·CENTRO</button>
+    <button data-sec="1" onclick="showSec(1)">2·EQUIPOS</button>
+    <button data-sec="2" onclick="showSec(2)">3·RED</button>
+    <button data-sec="3" onclick="showSec(3)">4·PERSONAL</button>
+    <button data-sec="4" onclick="showSec(4)">5·NECESID.</button>
+  </div>
+
+  <!-- SEC 0: CENTRO -->
+  <div class="panel show" id="sec0">
+    <fieldset><legend>Identificación del centro</legend>
+      <label>Centro (lista oficial OPS)</label>
+      <select id="f_censel"><option value="">— Seleccionar de la lista —</option></select>
+      <label>Nombre del establecimiento *</label>
+      <input type="text" id="f_nombre" placeholder="Ej.: Hospital Ramón Matías Mella">
+      <label>Código del establecimiento (SNS)</label>
+      <input type="text" id="f_codigo" placeholder="Código oficial del centro">
+      <div class="row2">
+        <div><label>Provincia</label>
+          <select id="f_provincia"><option>Dajabón</option><option>Elías Piña</option></select></div>
+        <div><label>Municipio</label><input type="text" id="f_municipio"></div>
+      </div>
+      <label>Tipo de establecimiento</label>
+      <div class="chips" data-single id="f_tipo">
+        <span class="chip-opt">Hospital</span><span class="chip-opt">CPN</span>
+        <span class="chip-opt">UNAP</span><span class="chip-opt">Otro</span>
+      </div>
+      <div class="row2">
+        <div><label>Fecha de visita</label><input type="date" id="f_fecha"></div>
+        <div><label>¿Usa SIP+ actualmente?</label>
+          <select id="f_usasip"><option value="">—</option><option>Sí</option><option>No</option><option>Parcialmente</option></select></div>
+      </div>
+    </fieldset>
+    <fieldset><legend>Contacto en el centro</legend>
+      <label>Persona de contacto</label><input type="text" id="f_contacto">
+      <div class="row2">
+        <div><label>Cargo</label><input type="text" id="f_cargo"></div>
+        <div><label>Teléfono</label><input type="tel" id="f_tel"></div>
+      </div>
+    </fieldset>
+  </div>
+
+  <!-- SEC 1: EQUIPOS -->
+  <div class="panel" id="sec1">
+    <div id="equiposList"></div>
+    <button class="btn btn-teal btn-block" onclick="addEquipo()">＋ Agregar equipo</button>
+  </div>
+
+  <!-- SEC 2: RED -->
+  <div class="panel" id="sec2">
+    <fieldset><legend>Conectividad a internet</legend>
+      <label>¿Dispone de internet?</label>
+      <div class="chips" data-single id="r_internet">
+        <span class="chip-opt" data-pos>Sí</span><span class="chip-opt" data-neg>No</span>
+      </div>
+      <div class="row2">
+        <div><label>Proveedor</label><input type="text" id="r_proveedor" placeholder="Claro, Altice, Wind..."></div>
+        <div><label>Velocidad (Mbps)</label><input type="number" id="r_velocidad"></div>
+      </div>
+      <label>Tipo de conexión</label>
+      <div class="chips" data-single id="r_tipocon">
+        <span class="chip-opt">Fibra</span><span class="chip-opt">ADSL/Cobre</span>
+        <span class="chip-opt">4G/LTE</span><span class="chip-opt">Satelital</span><span class="chip-opt">Ninguna</span>
+      </div>
+      <label>Estabilidad del servicio</label>
+      <div class="chips" data-single id="r_estab">
+        <span class="chip-opt" data-pos>Estable</span><span class="chip-opt" data-mid>Intermitente</span><span class="chip-opt" data-neg>Deficiente</span>
+      </div>
+    </fieldset>
+    <fieldset><legend>Infraestructura de red interna</legend>
+      <label>Cableado estructurado</label>
+      <div class="chips" data-single id="r_cableado">
+        <span class="chip-opt" data-pos>Sí</span><span class="chip-opt" data-mid>Parcial</span><span class="chip-opt" data-neg>No</span>
+      </div>
+      <div class="row3">
+        <div><label>Puntos de red</label><input type="number" id="r_puntos"></div>
+        <div><label>Switch (puertos)</label><input type="number" id="r_switch"></div>
+        <div><label>Router/Módem</label>
+          <select id="r_router"><option value="">—</option><option>Bueno</option><option>Regular</option><option>Malo</option><option>No tiene</option></select></div>
+      </div>
+      <label>Red WiFi</label>
+      <div class="chips" data-single id="r_wifi">
+        <span class="chip-opt" data-pos>Sí, buena cobertura</span><span class="chip-opt" data-mid>Sí, limitada</span><span class="chip-opt" data-neg>No</span>
+      </div>
+      <label>Protección eléctrica</label>
+      <div class="chips" data-multi id="r_energia">
+        <span class="chip-opt">UPS</span><span class="chip-opt">Inversor</span>
+        <span class="chip-opt">Planta</span><span class="chip-opt">Ninguna</span>
+      </div>
+      <label>Observaciones de red</label><textarea id="r_obs"></textarea>
+    </fieldset>
+  </div>
+
+  <!-- SEC 3: PERSONAL -->
+  <div class="panel" id="sec3">
+    <fieldset><legend>Resumen del personal</legend>
+      <div class="row2">
+        <div><label>Personal que usará SIP+</label><input type="number" id="p_total"></div>
+        <div><label>Capacitados en SIP+</label><input type="number" id="p_capacitados"></div>
+      </div>
+      <label>Observación general de competencias</label>
+      <textarea id="p_obs" placeholder="Nivel general de manejo de computadoras, necesidades de capacitación..."></textarea>
+    </fieldset>
+    <div id="personalList"></div>
+    <button class="btn btn-teal btn-block" onclick="addPersona()">＋ Evaluar persona individual (opcional)</button>
+  </div>
+
+  <!-- SEC 4: NECESIDADES -->
+  <div class="panel" id="sec4">
+    <fieldset><legend>Equipamiento requerido</legend>
+      <div class="row3">
+        <div><label>Computadoras</label><input type="number" id="n_pcs"></div>
+        <div><label>Impresoras</label><input type="number" id="n_imp"></div>
+        <div><label>UPS</label><input type="number" id="n_ups"></div>
+      </div>
+      <label>Otros equipos requeridos</label><input type="text" id="n_otros">
+    </fieldset>
+    <fieldset><legend>Diagnóstico y prioridad</legend>
+      <label>Mejoras de red necesarias</label><textarea id="n_red"></textarea>
+      <label>Prioridad de intervención</label>
+      <div class="chips" data-single id="n_prio">
+        <span class="chip-opt" data-neg>Alta</span><span class="chip-opt" data-mid>Media</span><span class="chip-opt" data-pos>Baja</span>
+      </div>
+      <label>Observaciones generales del levantamiento</label><textarea id="n_obs"></textarea>
+    </fieldset>
+  </div>
+</main>
+
+<div class="bottombar" id="formBar" style="display:none">
+  <button class="btn btn-danger btn-sm" onclick="deleteCenter()">Eliminar</button>
+  <button class="btn btn-primary" onclick="saveCenter(true)">Guardar centro</button>
+</div>
+
+<div id="modal">
+  <div class="modal-box">
+    <h3>⚙ Cuenta y usuarios</h3>
+    <fieldset><legend>Cambiar mi contraseña</legend>
+      <input type="password" id="cp_new" placeholder="Nueva contraseña (mín. 6)">
+      <input type="password" id="cp_conf" placeholder="Confirmar">
+      <button class="btn btn-teal btn-sm btn-block" onclick="changePassword()" style="margin-top:6px">Actualizar contraseña</button>
+    </fieldset>
+    <fieldset><legend>Agregar usuario</legend>
+      <p style="font-size:.8rem;color:#556;margin-bottom:8px">El nuevo usuario accede a los mismos datos del levantamiento con su propia contraseña y código de recuperación.</p>
+      <input type="text" id="nu_user" placeholder="Nombre de usuario" autocomplete="off">
+      <input type="password" id="nu_pass" placeholder="Contraseña inicial (mín. 6)">
+      <button class="btn btn-teal btn-sm btn-block" onclick="addUser()" style="margin-top:6px">Crear usuario</button>
+      <div id="nu_rc" style="display:none;background:#f0f7f6;border:1.5px dashed var(--teal-b);border-radius:8px;padding:12px;margin-top:10px">
+        <b style="font-size:.8rem">Código de recuperación del nuevo usuario:</b>
+        <div style="font-family:var(--mono);font-size:1.1rem;color:var(--teal);font-weight:700;margin-top:4px" id="nu_rc_code"></div>
+        <p style="font-size:.75rem;color:#556;margin-top:6px">Entrégaselo — no se volverá a mostrar.</p>
+      </div>
+    </fieldset>
+    <div id="userListBox" style="font-family:var(--mono);font-size:11px;color:#556;margin:8px 0"></div>
+    <button class="btn btn-ghost btn-block btn-sm" onclick="closeSettings()">Cerrar</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="printArea"></div>
+
+<script>
+/* ================= almacenamiento base (Claude.ai / navegador / memoria) ================= */
+const store = {
+  mem: {},
+  async get(k){
+    try{ if(window.storage){ const r = await window.storage.get(k); return r ? r.value : null; } }catch(e){}
+    try{ if(typeof localStorage!=='undefined'){ return localStorage.getItem(k); } }catch(e){}
+    return this.mem[k] ?? null;
+  },
+  async set(k,v){
+    try{ if(window.storage){ await window.storage.set(k,v); return; } }catch(e){}
+    try{ if(typeof localStorage!=='undefined'){ localStorage.setItem(k,v); return; } }catch(e){}
+    this.mem[k]=v;
+  },
+  async del(k){
+    try{ if(window.storage){ await window.storage.delete(k); } }catch(e){}
+    try{ if(typeof localStorage!=='undefined'){ localStorage.removeItem(k); } }catch(e){}
+    delete this.mem[k];
+  }
+};
+
+/* ================= cifrado AES-256-GCM + PBKDF2 ================= */
+const CryptoBox = {
+  enc: new TextEncoder(), dec: new TextDecoder(),
+  b64(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); },
+  unb64(s){ return Uint8Array.from(atob(s), c=>c.charCodeAt(0)); },
+  async deriveKey(pass, salt){
+    const base = await crypto.subtle.importKey('raw', this.enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name:'PBKDF2', salt, iterations:150000, hash:'SHA-256' },
+      base, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+  },
+  async encrypt(key, text){
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, this.enc.encode(text));
+    return JSON.stringify({ iv:this.b64(iv), ct:this.b64(ct) });
+  },
+  async decrypt(key, payload){
+    const {iv, ct} = JSON.parse(payload);
+    const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:this.unb64(iv)}, key, this.unb64(ct));
+    return this.dec.decode(pt);
+  }
+};
+
+/* ================= cuentas de usuario ================= */
+const K_USERS='sip-users', K_DATA='sip-data-enc';
+const K_OLD_SALT='sip-salt', K_OLD_CHECK='sip-check';
+let masterKey=null, masterRawB64=null, currentUser=null;
+let DB = { centros: [] };
+let currentId = null;
+
+function genRC(){
+  const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const g=n=>Array.from(crypto.getRandomValues(new Uint8Array(n))).map(x=>A[x%A.length]).join('');
+  return `${g(4)}-${g(4)}-${g(4)}`;
+}
+async function importMaster(rawB64){
+  return crypto.subtle.importKey('raw', CryptoBox.unb64(rawB64), {name:'AES-GCM'}, false, ['encrypt','decrypt']);
+}
+async function wrapMasterFor(secret){
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const kek=await CryptoBox.deriveKey(secret, salt);
+  return { salt: CryptoBox.b64(salt), wrap: await CryptoBox.encrypt(kek, masterRawB64) };
+}
+async function getUsers(){ const r=await store.get(K_USERS); return r?JSON.parse(r):null; }
+async function saveUsers(u){ await store.set(K_USERS, JSON.stringify(u)); }
+
+function showAuth(which){
+  ['authLogin','authSetup','authRC','authReset'].forEach(id=>document.getElementById(id).style.display='none');
+  const map={login:'authLogin',setup:'authSetup',rc:'authRC',reset:'authReset'};
+  document.getElementById(map[which]).style.display='block';
+  document.getElementById('lockTitle').textContent =
+    which==='setup' ? 'Crear cuenta inicial' :
+    which==='reset' ? 'Restablecer contraseña' :
+    which==='rc' ? 'Código de recuperación' : 'Levantamiento SIP+';
+}
+
+async function initAuth(){
+  const users = await getUsers();
+  if(users){ showAuth('login'); }
+  else {
+    showAuth('setup');
+    // detectar datos de la versión anterior (clave única)
+    const legacy = await store.get(K_OLD_SALT);
+    if(legacy){
+      document.getElementById('su_old').style.display='block';
+      document.getElementById('su_hint').innerHTML =
+        'Se detectaron datos guardados con la versión anterior. Ingresa tu <b style="color:#7ED3B2">clave anterior</b> para migrarlos a tu nueva cuenta; si la dejas vacía, se empezará desde cero.';
+    }
+  }
+  [['li_pass',doLogin],['su_conf',doSetup],['rs_conf',doReset]].forEach(([id,fn])=>{
+    document.getElementById(id).addEventListener('keydown',e=>{ if(e.key==='Enter') fn(); });
+  });
+}
+
+async function doSetup(){
+  const u=document.getElementById('su_user').value.trim().toLowerCase();
+  const p=document.getElementById('su_pass').value, c=document.getElementById('su_conf').value;
+  const oldPass=document.getElementById('su_old').value;
+  const msg=document.getElementById('su_msg');
+  if(!u){msg.textContent='Ingresa un nombre de usuario.';return;}
+  if(p.length<6){msg.textContent='La contraseña debe tener al menos 6 caracteres.';return;}
+  if(p!==c){msg.textContent='Las contraseñas no coinciden.';return;}
+
+  // migración desde versión de clave única (si aplica)
+  let migrated=null;
+  const oldSalt=await store.get(K_OLD_SALT);
+  if(oldSalt && oldPass){
+    try{
+      const oldKey=await CryptoBox.deriveKey(oldPass, CryptoBox.unb64(oldSalt));
+      const check=await store.get(K_OLD_CHECK);
+      if((await CryptoBox.decrypt(oldKey, check))!=='SIP-OK') throw new Error();
+      const oldData=await store.get(K_DATA);
+      if(oldData) migrated=JSON.parse(await CryptoBox.decrypt(oldKey, oldData));
+    }catch(e){ msg.textContent='La clave anterior no es correcta. Corrígela o déjala vacía para empezar de cero.'; return; }
+  }
+
+  const raw=crypto.getRandomValues(new Uint8Array(32));
+  masterRawB64=CryptoBox.b64(raw);
+  masterKey=await importMaster(masterRawB64);
+  const rc=genRC();
+  const users={};
+  users[u]={ pw: await wrapMasterFor(p), rc: await wrapMasterFor(rc) };
+  await saveUsers(users);
+  DB = migrated || { centros: [] };
+  await persist();
+  await store.del(K_OLD_SALT); await store.del(K_OLD_CHECK);
+  currentUser=u;
+  document.getElementById('rcCode').textContent=rc;
+  showAuth('rc');
+}
+function rcConfirmed(){ enterApp(); }
+
+async function doLogin(){
+  const u=document.getElementById('li_user').value.trim().toLowerCase();
+  const p=document.getElementById('li_pass').value;
+  const msg=document.getElementById('li_msg');
+  const users=await getUsers();
+  if(!users || !users[u]){msg.textContent='Usuario no encontrado.';return;}
+  try{
+    const kek=await CryptoBox.deriveKey(p, CryptoBox.unb64(users[u].pw.salt));
+    masterRawB64=await CryptoBox.decrypt(kek, users[u].pw.wrap);
+    masterKey=await importMaster(masterRawB64);
+    currentUser=u;
+    await load();
+    enterApp();
+  }catch(e){
+    msg.textContent='Contraseña incorrecta.';
+    document.getElementById('li_pass').value='';
+  }
+}
+
+async function doReset(){
+  const u=document.getElementById('rs_user').value.trim().toLowerCase();
+  const code=document.getElementById('rs_code').value.trim().toUpperCase();
+  const p=document.getElementById('rs_pass').value, c=document.getElementById('rs_conf').value;
+  const msg=document.getElementById('rs_msg');
+  const users=await getUsers();
+  if(!users || !users[u]){msg.textContent='Usuario no encontrado.';return;}
+  if(p.length<6){msg.textContent='La nueva contraseña debe tener al menos 6 caracteres.';return;}
+  if(p!==c){msg.textContent='Las contraseñas no coinciden.';return;}
+  try{
+    const kek=await CryptoBox.deriveKey(code, CryptoBox.unb64(users[u].rc.salt));
+    masterRawB64=await CryptoBox.decrypt(kek, users[u].rc.wrap);
+    masterKey=await importMaster(masterRawB64);
+    users[u].pw=await wrapMasterFor(p);
+    await saveUsers(users);
+    currentUser=u;
+    await load();
+    toast('✓ Contraseña restablecida');
+    enterApp();
+  }catch(e){
+    msg.textContent='Código de recuperación incorrecto.';
+  }
+}
+
+function enterApp(){
+  document.getElementById('lockScreen').style.display='none';
+  document.getElementById('hdrUser').textContent='👤 '+currentUser+' · DAJABÓN · ELÍAS PIÑA';
+  ['li_user','li_pass','su_user','su_pass','su_conf','su_old','rs_user','rs_code','rs_pass','rs_conf']
+    .forEach(id=>document.getElementById(id).value='');
+  document.getElementById('li_msg').textContent='';
+  renderList();
+}
+function logout(){
+  saveCenter(false);
+  masterKey=null; masterRawB64=null; currentUser=null; DB={centros:[]};
+  document.getElementById('viewForm').style.display='none';
+  document.getElementById('formBar').style.display='none';
+  document.getElementById('viewList').style.display='block';
+  document.getElementById('lockScreen').style.display='flex';
+  showAuth('login');
+}
+
+/* ---- ajustes / usuarios ---- */
+function openSettings(){
+  document.getElementById('modal').classList.add('show');
+  refreshUserList();
+}
+function closeSettings(){
+  document.getElementById('modal').classList.remove('show');
+  document.getElementById('nu_rc').style.display='none';
+  ['cp_new','cp_conf','nu_user','nu_pass'].forEach(id=>document.getElementById(id).value='');
+}
+async function refreshUserList(){
+  const users=await getUsers();
+  document.getElementById('userListBox').textContent =
+    'Usuarios registrados: ' + (users?Object.keys(users).join(', '):'—');
+}
+async function changePassword(){
+  const p=document.getElementById('cp_new').value, c=document.getElementById('cp_conf').value;
+  if(p.length<6){toast('Mínimo 6 caracteres');return;}
+  if(p!==c){toast('No coinciden');return;}
+  const users=await getUsers();
+  users[currentUser].pw=await wrapMasterFor(p);
+  await saveUsers(users);
+  document.getElementById('cp_new').value='';document.getElementById('cp_conf').value='';
+  toast('✓ Contraseña actualizada');
+}
+async function addUser(){
+  const u=document.getElementById('nu_user').value.trim().toLowerCase();
+  const p=document.getElementById('nu_pass').value;
+  if(!u){toast('Ingresa el nombre de usuario');return;}
+  if(p.length<6){toast('Contraseña: mínimo 6 caracteres');return;}
+  const users=await getUsers();
+  if(users[u]){toast('Ese usuario ya existe');return;}
+  const rc=genRC();
+  users[u]={ pw:await wrapMasterFor(p), rc:await wrapMasterFor(rc) };
+  await saveUsers(users);
+  document.getElementById('nu_rc_code').textContent=rc;
+  document.getElementById('nu_rc').style.display='block';
+  document.getElementById('nu_user').value='';document.getElementById('nu_pass').value='';
+  refreshUserList();
+  toast('✓ Usuario creado');
+}
+
+async function load(){
+  const raw = await store.get(K_DATA);
+  if(raw && masterKey){
+    try{ DB = JSON.parse(await CryptoBox.decrypt(masterKey, raw)); }catch(e){ DB = {centros:[]}; }
+  }
+  renderList();
+}
+async function persist(){
+  if(!masterKey) return;
+  try{
+    await store.set(K_DATA, await CryptoBox.encrypt(masterKey, JSON.stringify(DB)));
+  }catch(e){
+    toast('⚠ Almacenamiento casi lleno: exporta y elimina fotos');
+  }
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+const uid = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+/* ================= chips ================= */
+function initChips(scope){
+  scope.querySelectorAll('.chips').forEach(g=>{
+    g.querySelectorAll('.chip-opt').forEach(c=>{
+      c.onclick = ()=>{
+        if(g.hasAttribute('data-single')){
+          g.querySelectorAll('.chip-opt').forEach(x=>x.classList.remove('sel','neg','mid'));
+          c.classList.add('sel');
+          if(c.hasAttribute('data-neg')) c.classList.add('neg');
+          if(c.hasAttribute('data-mid')) c.classList.add('mid');
+        } else {
+          c.classList.toggle('sel');
+        }
+      };
+    });
+  });
+}
+function chipVal(id){
+  const g = document.getElementById(id);
+  const sel = [...g.querySelectorAll('.chip-opt.sel')].map(c=>c.textContent.trim());
+  return g.hasAttribute('data-single') ? (sel[0]||'') : sel.join(', ');
+}
+function setChip(id,val){
+  const g = document.getElementById(id);
+  const vals = (val||'').split(', ');
+  g.querySelectorAll('.chip-opt').forEach(c=>{
+    c.classList.remove('sel','neg','mid');
+    if(vals.includes(c.textContent.trim())){
+      c.classList.add('sel');
+      if(c.hasAttribute('data-neg')) c.classList.add('neg');
+      if(c.hasAttribute('data-mid')) c.classList.add('mid');
+    }
+  });
+}
+
+/* ================= lista ================= */
+function coverage(c){
+  const s = [
+    !!c.nombre,
+    (c.equipos&&c.equipos.length>0),
+    !!(c.red && (c.red.internet||c.red.tipocon)),
+    !!(c.personal && (c.personal.total||c.personal.obs||(c.personal.detalle&&c.personal.detalle.length))),
+    !!(c.nec && (c.nec.prio||c.nec.pcs||c.nec.obs))
+  ];
+  return s;
+}
+function renderList(){
+  const list = document.getElementById('centerList');
+  document.getElementById('countBadge').textContent = DB.centros.length + (DB.centros.length===1?' centro':' centros');
+  if(!DB.centros.length){
+    list.innerHTML = '<div class="empty"><div class="big">📋</div><b>Sin centros registrados</b><br>Toca "Nuevo centro" para iniciar el levantamiento.</div>';
+    return;
+  }
+  list.innerHTML = DB.centros.map(c=>{
+    const cov = coverage(c); const done = cov.filter(Boolean).length;
+    return `<div class="center-card" onclick="openCenter('${c.id}')">
+      <h3>${c.nombre||'(sin nombre)'}</h3>
+      <div class="meta">${c.tipo||'—'} · ${c.provincia||''} ${c.municipio? '· '+c.municipio:''} ${c.fecha? '· '+c.fecha:''}</div>
+      <div class="coverage">${cov.map(d=>`<div class="seg ${d?'done':''}"></div>`).join('')}</div>
+      <div class="coverage-label"><span>Centro·Equipos·Red·Personal·Necesid.</span><span>${done}/5</span></div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= navegación ================= */
+function newCenter(){
+  currentId = null;
+  clearForm();
+  document.getElementById('f_fecha').value = new Date().toISOString().slice(0,10);
+  showForm();
+}
+function openCenter(id){
+  currentId = id;
+  const c = DB.centros.find(x=>x.id===id);
+  clearForm(); fillForm(c); showForm();
+}
+function showForm(){
+  document.getElementById('viewList').style.display='none';
+  document.getElementById('viewForm').style.display='block';
+  document.getElementById('formBar').style.display='flex';
+  showSec(0); window.scrollTo(0,0);
+}
+function backToList(){
+  saveCenter(false);
+  document.getElementById('viewForm').style.display='none';
+  document.getElementById('formBar').style.display='none';
+  document.getElementById('viewList').style.display='block';
+  renderList();
+}
+function showSec(n){
+  document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('show', i===n));
+  document.querySelectorAll('#secNav button').forEach((b,i)=>b.classList.toggle('active', i===n));
+  window.scrollTo(0,0);
+}
+
+/* ================= equipos dinámicos ================= */
+let equipos = [];
+function addEquipo(data){
+  equipos.push(data || {tipo:'',marca:'',serie:'',cpu:'',ram:'',disco:'',so:'',estado:'',uso:'',cumple:'',obs:'',foto:''});
+  renderEquipos();
+}
+function pickPhoto(cb){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment');
+  inp.onchange=()=>{
+    const f=inp.files && inp.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=700;
+        const s=Math.min(1, MAX/Math.max(img.width,img.height));
+        const w=Math.round(img.width*s), hh=Math.round(img.height*s);
+        const cv=document.createElement('canvas'); cv.width=w; cv.height=hh;
+        cv.getContext('2d').drawImage(img,0,0,w,hh);
+        cb(cv.toDataURL('image/jpeg',0.55));
+      };
+      img.src=rd.result;
+    };
+    rd.readAsDataURL(f);
+  };
+  inp.click();
+}
+function attrEsc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function optList(arr, cur){
+  return arr.map(t=>`<option ${cur===t?'selected':''}>${t}</option>`).join('');
+}
+function renderEquipos(){
+  const el = document.getElementById('equiposList');
+  el.innerHTML = equipos.map((e,i)=>`
+  <div class="item-card">
+    <button type="button" class="del" data-eqdel="${i}">✕</button>
+    <h4>Equipo ${i+1}</h4>
+    <div class="row2">
+      <div><label>Tipo</label><select data-eq="${i}" data-f="tipo">
+        ${optList(['','Desktop','Laptop','All-in-One','Impresora','Escáner','UPS','Tablet','Otro'], e.tipo)}
+      </select></div>
+      <div><label>Marca / modelo</label><input type="text" value="${attrEsc(e.marca)}" data-eq="${i}" data-f="marca"></div>
+    </div>
+    <label>Número de serie</label>
+    <input type="text" value="${attrEsc(e.serie)}" data-eq="${i}" data-f="serie" placeholder="Serial del fabricante / etiqueta de inventario">
+    <div class="row3">
+      <div><label>Procesador</label><input type="text" value="${attrEsc(e.cpu)}" data-eq="${i}" data-f="cpu" placeholder="i3-6100"></div>
+      <div><label>RAM</label><input type="text" value="${attrEsc(e.ram)}" data-eq="${i}" data-f="ram" placeholder="8 GB"></div>
+      <div><label>Disco</label><input type="text" value="${attrEsc(e.disco)}" data-eq="${i}" data-f="disco" placeholder="256 SSD"></div>
+    </div>
+    <div class="row3">
+      <div><label>Sist. operativo</label><input type="text" value="${attrEsc(e.so)}" data-eq="${i}" data-f="so" placeholder="Win 10"></div>
+      <div><label>Estado</label><select data-eq="${i}" data-f="estado">
+        ${optList(['','Bueno','Regular','Malo','Fuera de servicio'], e.estado)}
+      </select></div>
+      <div><label>¿Apto SIP+?</label><select data-eq="${i}" data-f="cumple">
+        ${optList(['','Sí','No','Con mejoras'], e.cumple)}
+      </select></div>
+    </div>
+    <label>Uso destinado</label><input type="text" value="${attrEsc(e.uso)}" data-eq="${i}" data-f="uso" placeholder="SIP+, vacunas, administración...">
+    <label>Observación</label><input type="text" value="${attrEsc(e.obs)}" data-eq="${i}" data-f="obs">
+    <div class="fotobar">
+      <button type="button" class="btn btn-sm btn-ghost" data-eqfoto="${i}">📷 ${e.foto?'Cambiar foto':'Agregar foto'}</button>
+      ${e.foto?`<img class="thumb" src="${e.foto}"><button type="button" class="fotodel" data-eqfotodel="${i}">✕</button>`:''}
+    </div>
+  </div>`).join('') || '<div class="empty" style="padding:26px"><b>Sin equipos registrados</b><br>Agrega cada equipo encontrado en el centro.</div>';
+}
+document.getElementById('equiposList').addEventListener('input', e=>{
+  const f=e.target.closest('[data-eq]');
+  if(f) equipos[parseInt(f.dataset.eq)][f.dataset.f]=f.value;
+});
+document.getElementById('equiposList').addEventListener('change', e=>{
+  const f=e.target.closest('select[data-eq]');
+  if(f) equipos[parseInt(f.dataset.eq)][f.dataset.f]=f.value;
+});
+document.getElementById('equiposList').addEventListener('click', e=>{
+  const del=e.target.closest('button[data-eqdel]');
+  if(del){ equipos.splice(parseInt(del.dataset.eqdel),1); renderEquipos(); return; }
+  const bf=e.target.closest('button[data-eqfoto]');
+  if(bf){ const i=parseInt(bf.dataset.eqfoto);
+    pickPhoto(url=>{ equipos[i].foto=url; renderEquipos(); }); return; }
+  const bd=e.target.closest('button[data-eqfotodel]');
+  if(bd){ equipos[parseInt(bd.dataset.eqfotodel)].foto=''; renderEquipos(); }
+});
+
+/* ================= personal dinámico ================= */
+let personas = [];
+function addPersona(data){
+  personas.push(data || {nombre:'',cargo:'',nivel:'',conoce:'',capacitado:''});
+  renderPersonas();
+}
+function renderPersonas(){
+  const el = document.getElementById('personalList');
+  el.innerHTML = personas.map((p,i)=>`
+  <div class="item-card">
+    <button type="button" class="del" data-pdel="${i}">✕</button>
+    <h4>Persona ${i+1}</h4>
+    <div class="row2">
+      <div><label>Nombre</label><input type="text" value="${attrEsc(p.nombre)}" data-pe="${i}" data-f="nombre"></div>
+      <div><label>Cargo</label><input type="text" value="${attrEsc(p.cargo)}" data-pe="${i}" data-f="cargo"></div>
+    </div>
+    <div class="row3">
+      <div><label>Nivel informática</label><select data-pe="${i}" data-f="nivel">
+        ${optList(['','Ninguno','Básico','Intermedio','Avanzado'], p.nivel)}
+      </select></div>
+      <div><label>¿Conoce SIP+?</label><select data-pe="${i}" data-f="conoce">
+        ${optList(['','Sí','No'], p.conoce)}
+      </select></div>
+      <div><label>¿Capacitado?</label><select data-pe="${i}" data-f="capacitado">
+        ${optList(['','Sí','No'], p.capacitado)}
+      </select></div>
+    </div>
+  </div>`).join('');
+}
+document.getElementById('personalList').addEventListener('input', e=>{
+  const f=e.target.closest('[data-pe]');
+  if(f) personas[parseInt(f.dataset.pe)][f.dataset.f]=f.value;
+});
+document.getElementById('personalList').addEventListener('change', e=>{
+  const f=e.target.closest('select[data-pe]');
+  if(f) personas[parseInt(f.dataset.pe)][f.dataset.f]=f.value;
+});
+document.getElementById('personalList').addEventListener('click', e=>{
+  const b=e.target.closest('button[data-pdel]');
+  if(!b) return;
+  personas.splice(parseInt(b.dataset.pdel),1);
+  renderPersonas();
+});
+
+/* ================= form <-> data ================= */
+function clearForm(){
+  document.querySelectorAll('#viewForm input, #viewForm textarea').forEach(i=>i.value='');
+  if(typeof fillCenSel==='function') fillCenSel();
+  document.querySelectorAll('#viewForm select').forEach(s=>s.selectedIndex=0);
+  document.querySelectorAll('#viewForm .chip-opt').forEach(c=>c.classList.remove('sel','neg','mid'));
+  equipos=[]; personas=[]; renderEquipos(); renderPersonas();
+}
+function collect(){
+  return {
+    id: currentId || uid(),
+    nombre: v('f_nombre'), codigo: v('f_codigo'), provincia: v('f_provincia'), municipio: v('f_municipio'),
+    tipo: chipVal('f_tipo'), fecha: v('f_fecha'), usasip: v('f_usasip'),
+    contacto: v('f_contacto'), cargo: v('f_cargo'), tel: v('f_tel'),
+    equipos: JSON.parse(JSON.stringify(equipos)),
+    red: {
+      internet: chipVal('r_internet'), proveedor: v('r_proveedor'), velocidad: v('r_velocidad'),
+      tipocon: chipVal('r_tipocon'), estab: chipVal('r_estab'), cableado: chipVal('r_cableado'),
+      puntos: v('r_puntos'), switch: v('r_switch'), router: v('r_router'),
+      wifi: chipVal('r_wifi'), energia: chipVal('r_energia'), obs: v('r_obs')
+    },
+    personal: { total: v('p_total'), capacitados: v('p_capacitados'), obs: v('p_obs'),
+      detalle: JSON.parse(JSON.stringify(personas)) },
+    nec: { pcs: v('n_pcs'), imp: v('n_imp'), ups: v('n_ups'), otros: v('n_otros'),
+      red: v('n_red'), prio: chipVal('n_prio'), obs: v('n_obs') }
+  };
+}
+function v(id){ return document.getElementById(id).value.trim(); }
+function sv(id,val){ document.getElementById(id).value = val||''; }
+function fillForm(c){
+  sv('f_nombre',c.nombre); sv('f_codigo',c.codigo); sv('f_provincia',c.provincia); sv('f_municipio',c.municipio);
+  if(typeof syncCenSel==='function') syncCenSel();
+  setChip('f_tipo',c.tipo); sv('f_fecha',c.fecha); sv('f_usasip',c.usasip);
+  sv('f_contacto',c.contacto); sv('f_cargo',c.cargo); sv('f_tel',c.tel);
+  equipos = JSON.parse(JSON.stringify(c.equipos||[])); renderEquipos();
+  const r = c.red||{};
+  setChip('r_internet',r.internet); sv('r_proveedor',r.proveedor); sv('r_velocidad',r.velocidad);
+  setChip('r_tipocon',r.tipocon); setChip('r_estab',r.estab); setChip('r_cableado',r.cableado);
+  sv('r_puntos',r.puntos); sv('r_switch',r.switch); sv('r_router',r.router);
+  setChip('r_wifi',r.wifi); setChip('r_energia',r.energia); sv('r_obs',r.obs);
+  const p = c.personal||{};
+  sv('p_total',p.total); sv('p_capacitados',p.capacitados); sv('p_obs',p.obs);
+  personas = JSON.parse(JSON.stringify(p.detalle||[])); renderPersonas();
+  const n = c.nec||{};
+  sv('n_pcs',n.pcs); sv('n_imp',n.imp); sv('n_ups',n.ups); sv('n_otros',n.otros);
+  sv('n_red',n.red); setChip('n_prio',n.prio); sv('n_obs',n.obs);
+}
+async function saveCenter(notify){
+  const data = collect();
+  if(!data.nombre && !data.equipos.length){ if(notify) toast('Agrega al menos el nombre del centro'); return; }
+  const idx = DB.centros.findIndex(x=>x.id===data.id);
+  if(idx>=0) DB.centros[idx]=data; else DB.centros.push(data);
+  currentId = data.id;
+  await persist();
+  if(notify){ toast('✓ Centro guardado'); backToList(); }
+}
+async function deleteCenter(){
+  if(currentId && confirm('¿Eliminar este centro y todos sus datos?')){
+    DB.centros = DB.centros.filter(x=>x.id!==currentId);
+    await persist(); currentId=null;
+    document.getElementById('viewForm').style.display='none';
+    document.getElementById('formBar').style.display='none';
+    document.getElementById('viewList').style.display='block';
+    renderList(); toast('Centro eliminado');
+  }
+}
+
+/* ================= export XLSX ================= */
+function exportXLSX(){
+  if(!DB.centros.length){ toast('No hay datos para exportar'); return; }
+  const wb = XLSX.utils.book_new();
+  // Hoja Centros
+  const hC = DB.centros.map(c=>({
+    'Centro':c.nombre,'Código SNS':c.codigo,'Tipo':c.tipo,'Provincia':c.provincia,'Municipio':c.municipio,
+    'Fecha visita':c.fecha,'Usa SIP+':c.usasip,'Contacto':c.contacto,'Cargo':c.cargo,'Teléfono':c.tel
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hC), 'Centros');
+  // Hoja Equipos
+  const hE = [];
+  DB.centros.forEach(c=>(c.equipos||[]).forEach((e,i)=>hE.push({
+    'Centro':c.nombre,'Código SNS':c.codigo,'Nº':i+1,'Tipo':e.tipo,'Marca/Modelo':e.marca,'Nº Serie':e.serie,'Procesador':e.cpu,
+    'RAM':e.ram,'Disco':e.disco,'SO':e.so,'Estado':e.estado,'Apto SIP+':e.cumple,'Uso':e.uso,'Observación':e.obs,'Foto':e.foto?'Sí':''
+  })));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hE.length?hE:[{'Centro':'—'}]), 'Equipos');
+  // Hoja Red
+  const hR = DB.centros.map(c=>{const r=c.red||{};return{
+    'Centro':c.nombre,'Código SNS':c.codigo,'Internet':r.internet,'Proveedor':r.proveedor,'Velocidad (Mbps)':r.velocidad,
+    'Tipo conexión':r.tipocon,'Estabilidad':r.estab,'Cableado estructurado':r.cableado,
+    'Puntos de red':r.puntos,'Switch (puertos)':r.switch,'Router/Módem':r.router,
+    'WiFi':r.wifi,'Protección eléctrica':r.energia,'Observaciones':r.obs}});
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hR), 'Red');
+  // Hoja Personal
+  const hP = [];
+  DB.centros.forEach(c=>{
+    const p=c.personal||{};
+    hP.push({'Centro':c.nombre,'Código SNS':c.codigo,'Registro':'RESUMEN','Nombre':'','Cargo':'','Nivel informática':'',
+      'Conoce SIP+':'','Capacitado':'', 'Total usuarios SIP+':p.total,'Capacitados':p.capacitados,'Observación':p.obs});
+    (p.detalle||[]).forEach(x=>hP.push({'Centro':c.nombre,'Código SNS':c.codigo,'Registro':'PERSONA','Nombre':x.nombre,'Cargo':x.cargo,
+      'Nivel informática':x.nivel,'Conoce SIP+':x.conoce,'Capacitado':x.capacitado,'Total usuarios SIP+':'','Capacitados':'','Observación':''}));
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hP), 'Personal');
+  // Hoja Necesidades
+  const hN = DB.centros.map(c=>{const n=c.nec||{};return{
+    'Centro':c.nombre,'Código SNS':c.codigo,'Prioridad':n.prio,'PCs requeridas':n.pcs,'Impresoras':n.imp,'UPS':n.ups,
+    'Otros equipos':n.otros,'Mejoras de red':n.red,'Observaciones':n.obs}});
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hN), 'Necesidades');
+  XLSX.writeFile(wb, 'Levantamiento_SIP_Dajabon_EliasPina.xlsx');
+  toast('✓ Excel generado');
+}
+
+/* ================= export PDF (print) ================= */
+function esc(s){ return (s||'').toString().replace(/</g,'&lt;'); }
+function exportPDF(){
+  if(!DB.centros.length){ toast('No hay datos para exportar'); return; }
+  const pa = document.getElementById('printArea');
+  pa.innerHTML = DB.centros.map(c=>{
+    const r=c.red||{}, p=c.personal||{}, n=c.nec||{};
+    return `<div class="pr-page">
+      <div class="pr-head">
+        <h1>Levantamiento Técnico SIP+ — ${esc(c.nombre)}</h1>
+        <div class="sub">${esc(c.tipo)} · ${esc(c.provincia)} ${c.municipio?'· '+esc(c.municipio):''}${c.codigo?' · Cód. SNS: '+esc(c.codigo):''} · Visita: ${esc(c.fecha)} · Levantado por: ${esc(currentUser||'')}</div>
+      </div>
+      <div class="pr-sec">1. Datos del centro</div>
+      <div class="pr-kv">
+        <div><b>Usa SIP+ actualmente:</b> ${esc(c.usasip)||'—'}</div>
+        <div><b>Contacto:</b> ${esc(c.contacto)||'—'} ${c.cargo?'('+esc(c.cargo)+')':''}</div>
+        <div><b>Teléfono:</b> ${esc(c.tel)||'—'}</div>
+      </div>
+      <div class="pr-sec">2. Inventario de equipos (${(c.equipos||[]).length})</div>
+      ${(c.equipos||[]).length ? `<table class="pr"><tr><th>#</th><th>Tipo</th><th>Marca/Modelo</th><th>Serie</th><th>CPU</th><th>RAM</th><th>Disco</th><th>SO</th><th>Estado</th><th>Apto SIP+</th><th>Uso</th></tr>
+        ${c.equipos.map((e,i)=>`<tr><td>${i+1}</td><td>${esc(e.tipo)}</td><td>${esc(e.marca)}</td><td>${esc(e.serie)||'—'}</td><td>${esc(e.cpu)}</td><td>${esc(e.ram)}</td><td>${esc(e.disco)}</td><td>${esc(e.so)}</td><td>${esc(e.estado)}</td><td>${esc(e.cumple)}</td><td>${esc(e.uso)}</td></tr>`).join('')}
+      </table>` : '<p style="font-size:9pt">Sin equipos registrados.</p>'}
+      ${(c.equipos||[]).some(e=>e.foto)?`<div class="pr-gal">${c.equipos.map((e,i)=>e.foto?`<div class="pr-ph"><img src="${e.foto}"><span>Equipo ${i+1}: ${esc(e.tipo)} ${esc(e.marca)}</span></div>`:'').join('')}</div>`:''}
+      <div class="pr-sec">3. Infraestructura de red</div>
+      <div class="pr-kv">
+        <div><b>Internet:</b> ${esc(r.internet)||'—'} ${r.proveedor?'· '+esc(r.proveedor):''} ${r.velocidad?'· '+esc(r.velocidad)+' Mbps':''}</div>
+        <div><b>Tipo de conexión:</b> ${esc(r.tipocon)||'—'} · <b>Estabilidad:</b> ${esc(r.estab)||'—'}</div>
+        <div><b>Cableado estructurado:</b> ${esc(r.cableado)||'—'} · <b>Puntos:</b> ${esc(r.puntos)||'—'}</div>
+        <div><b>Switch:</b> ${esc(r.switch)||'—'} puertos · <b>Router:</b> ${esc(r.router)||'—'}</div>
+        <div><b>WiFi:</b> ${esc(r.wifi)||'—'}</div>
+        <div><b>Protección eléctrica:</b> ${esc(r.energia)||'—'}</div>
+      </div>
+      ${r.obs?`<p style="font-size:9pt;margin-top:4px"><b>Obs.:</b> ${esc(r.obs)}</p>`:''}
+      <div class="pr-sec">4. Personal y competencias</div>
+      <div class="pr-kv">
+        <div><b>Usuarios SIP+ previstos:</b> ${esc(p.total)||'—'}</div>
+        <div><b>Capacitados en SIP+:</b> ${esc(p.capacitados)||'—'}</div>
+      </div>
+      ${p.obs?`<p style="font-size:9pt;margin-top:4px">${esc(p.obs)}</p>`:''}
+      ${(p.detalle||[]).length?`<table class="pr" style="margin-top:6px"><tr><th>Nombre</th><th>Cargo</th><th>Nivel informática</th><th>Conoce SIP+</th><th>Capacitado</th></tr>
+        ${p.detalle.map(x=>`<tr><td>${esc(x.nombre)}</td><td>${esc(x.cargo)}</td><td>${esc(x.nivel)}</td><td>${esc(x.conoce)}</td><td>${esc(x.capacitado)}</td></tr>`).join('')}</table>`:''}
+      <div class="pr-sec">5. Necesidades identificadas — Prioridad: ${esc(n.prio)||'—'}</div>
+      <div class="pr-kv">
+        <div><b>Computadoras:</b> ${esc(n.pcs)||'0'}</div>
+        <div><b>Impresoras:</b> ${esc(n.imp)||'0'}</div>
+        <div><b>UPS:</b> ${esc(n.ups)||'0'}</div>
+        <div><b>Otros:</b> ${esc(n.otros)||'—'}</div>
+      </div>
+      ${n.red?`<p style="font-size:9pt;margin-top:4px"><b>Mejoras de red:</b> ${esc(n.red)}</p>`:''}
+      ${n.obs?`<p style="font-size:9pt;margin-top:4px"><b>Observaciones:</b> ${esc(n.obs)}</p>`:''}
+      <div class="pr-foot">Levantamiento de necesidades de equipamiento informático y redes · SIP+ / Reporte de vacunas · OPS-OMS / KOICA · Provincias Dajabón y Elías Piña<br>© 2026 Darien Gómez — Documento generado con software propietario. Todos los derechos reservados.</div>
+    </div>`;
+  }).join('');
+  window.print();
+}
+
+const CENTROS=[
+["Dajabón","LOMA DE CABRERA","RAMON ADRIANO VILLALONA"],
+["Dajabón","DAJABON","MATIAS RAMON MELLA"],
+["Dajabón","RESTAURACION","RESTAURACION"],
+["Dajabón","PARTIDO","PARTIDO"],
+["Dajabón","LOMA DE CABRERA","LUPERON"],
+["Dajabón","LOMA DE CABRERA","SANTIAGO DE LA CRUZ"],
+["Dajabón","LOMA DE CABRERA","RIVERA DEL MASACRE"],
+["Dajabón","LOMA DE CABRERA","AGUACATE"],
+["Dajabón","EL PINO","MANUEL BUENO"],
+["Dajabón","RESTAURACION","MARIANO CESTEROS"],
+["Dajabón","DAJABON","LA FE"],
+["Dajabón","DAJABON","SECTOR NORTE"],
+["Dajabón","DAJABON","LA MANICERA"],
+["Dajabón","DAJABON","VALENTIN SALINERO"],
+["Dajabón","PARTIDO","PARTIDO DAJABON"],
+["Dajabón","PARTIDO","VACA GORDA"],
+["Dajabón","EL PINO","EL PINO DAJABON"],
+["Dajabón","PARTIDO","LA GORRA"],
+["Dajabón","DAJABON","CHACUEY"],
+["Dajabón","DAJABON","PLAZA BELLER"],
+["Dajabón","DAJABON","SABANA LARGA"],
+["Dajabón","DAJABON","LA CURVA"],
+["Dajabón","DAJABON","LOS MICHES"],
+["Dajabón","DAJABON","CAÑONGO"],
+["Dajabón","DAJABON","LA VIGIA"],
+["Dajabón","RESTAURACION","TRINITARIA"],
+["Dajabón","RESTAURACION","GUAYAJAYUCO"],
+["Dajabón","RESTAURACION","LOS CEREZOS"],
+["Dajabón","RESTAURACION","LAS ROSAS"],
+["Dajabón","RESTAURACION","RIO LIMPIO"],
+["Dajabón","LOMA DE CABRERA","CAPOTILLO"],
+["Dajabón","LOMA DE CABRERA","HIPOLITO BILLINI"],
+["Dajabón","DAJABON","CENTRO CLINICO Y DIAGNOSTICO DE ATENCION"],
+["Dajabón","RESTAURACION","CRUZ DE CABRERA"],
+["Dajabón","DAJABON","LOYOLA"],
+["Elías Piña","BANICA","BANICA"],
+["Elías Piña","COMENDADOR","ROSA DUARTE"],
+["Elías Piña","HONDO VALLE","HONDO VALLE"],
+["Elías Piña","BANICA","HIGUERITO"],
+["Elías Piña","BANICA","SABANA MULA"],
+["Elías Piña","BANICA","SABANA CRUZ"],
+["Elías Piña","EL LLANO","ROSA LA PIEDRA"],
+["Elías Piña","PEDRO SANTANA","LAS PALMAS"],
+["Elías Piña","EL LLANO","EL LLANO"],
+["Elías Piña","COMENDADOR","MACASIAS"],
+["Elías Piña","COMENDADOR","RINCONCITO"],
+["Elías Piña","COMENDADOR","PINZON"],
+["Elías Piña","COMENDADOR","POTROSO"],
+["Elías Piña","COMENDADOR","HATO VIEJO"],
+["Elías Piña","COMENDADOR","SABANA LARGA"],
+["Elías Piña","COMENDADOR","GUAYABO"],
+["Elías Piña","HONDO VALLE","RANCHO LA GUARDIA"],
+["Elías Piña","JUAN SANTIAGO","JUAN SANTIAGO"],
+["Elías Piña","COMENDADOR","LAS DELICIAS"],
+["Elías Piña","COMENDADOR","LA GALLERA"],
+["Elías Piña","EL LLANO","GUANITO"],
+["Elías Piña","PEDRO SANTANA","PEDRO SANTANA"]
+];
+function fillCenSel(){
+  var prov=document.getElementById('f_provincia').value;
+  var sel=document.getElementById('f_censel');
+  if(!sel) return;
+  var opts=CENTROS.filter(function(c){return c[0]===prov;});
+  var html='<option value="">— Seleccionar de la lista —</option>';
+  for(var i=0;i<opts.length;i++){ html+='<option value="'+i+'">'+opts[i][2]+' ('+opts[i][1]+')</option>'; }
+  html+='<option value="__m">✎ Escribir manualmente</option>';
+  sel.innerHTML=html;
+}
+function onCenSel(){
+  var sel=document.getElementById('f_censel');
+  var v=sel.value;
+  if(v===''){ return; }
+  if(v==='__m'){ document.getElementById('f_nombre').value=''; document.getElementById('f_nombre').focus(); return; }
+  var prov=document.getElementById('f_provincia').value;
+  var opts=CENTROS.filter(function(c){return c[0]===prov;});
+  var c=opts[parseInt(v)];
+  if(c){ document.getElementById('f_nombre').value=c[2]; document.getElementById('f_municipio').value=c[1]; }
+}
+function syncCenSel(){
+  fillCenSel();
+  var sel=document.getElementById('f_censel');
+  var prov=document.getElementById('f_provincia').value;
+  var nombre=document.getElementById('f_nombre').value.trim().toUpperCase();
+  var opts=CENTROS.filter(function(c){return c[0]===prov;});
+  for(var i=0;i<opts.length;i++){ if(opts[i][2]===nombre){ sel.value=String(i); return; } }
+  sel.value='';
+}
+document.getElementById('f_provincia').addEventListener('change', fillCenSel);
+document.getElementById('f_censel').addEventListener('change', onCenSel);
+
+
+/* ===== Aviso de derechos de autor ===== */
+(function(){
+  try{
+    console.log('%cLevantamiento SIP+','font-size:14px;font-weight:bold;color:#8A1F3D');
+    console.log('%cCopyright (c) 2026 Darien Gómez. Todos los derechos reservados.\nObra protegida por la Ley 65-00 de Derecho de Autor (Rep. Dominicana).\nProhibida su reproduccion o distribucion sin autorizacion escrita del titular.','color:#1F6F78');
+  }catch(e){}
+})();
+
+/* ================= init ================= */
+initChips(document);
+renderEquipos(); renderPersonas();
+fillCenSel();
+initAuth();
+</script>
+</body>
+</html>

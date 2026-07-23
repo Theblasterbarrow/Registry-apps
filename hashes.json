@@ -1,0 +1,28 @@
+{
+  "fecha_utc": "2026-07-23T18:10:43.809861+00:00",
+  "autor": "Darien Gómez",
+  "obras": [
+    {
+      "archivo": "levantamiento-insumos.html",
+      "titulo": "Levantamiento de Insumos — Necesidades y nevera de vacunas",
+      "bytes": 51945,
+      "sha256": "85ae017aa9489a54416d012ff76c7dde11315d30746cfa28719a41f2893f46a1",
+      "sha512": "3ce19b8035e654f60f8d0cb1ae9018a0730f22a014671e5cbcf2b77c19e9c1b6954b9faaac69d7e61b1a6aa47f37f9d4bc2da3995f5ed6169ac718e1f2477367"
+    },
+    {
+      "archivo": "levantamiento-personal-aipeo.html",
+      "titulo": "Levantamiento del Personal de Salud — AIPEO",
+      "bytes": 44220,
+      "sha256": "1a58e67667a458333d0d2f7825e381639247fa3246e157e294eecf0b43845417",
+      "sha512": "acacf8c8af813a6573c809438f20a170259529368df92ccbedd20ccb0fa8c801d64ab8169266fbc006bad63b677c2c34c069a291c1067d3fe433cb27420c93ea"
+    },
+    {
+      "archivo": "levantamiento-sip.html",
+      "titulo": "Levantamiento SIP+ — Equipamiento, red y personal",
+      "bytes": 61224,
+      "sha256": "08b5f4db30e50d54ede9eb15cadd9333b59768254ac9d4e955e1a09305fd1525",
+      "sha512": "ee8cb399674d437a14efa32fbcb444a57aee4efb3b950ce36fe23086d1ee2bc37b272313b2354f5861ccfc024c300e1b620c2e1e4c3604ac69d87426d27d069b"
+    }
+  ],
+  "hash_maestro_conjunto": "c14b82fcdf35e872d9c0ed5292ea2952a552ef2fcbbbac81d2a15fff5ebc94d2"
+}

@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<!--
+================================================================================
+  Levantamiento del Personal de Salud · AIPEO
+  Aplicación de levantamiento del personal de salud para AIPEO en centros de salud.
+
+  Copyright (c) 2026 Darien Gómez. Todos los derechos reservados.
+
+  OBRA PROTEGIDA POR DERECHO DE AUTOR
+  Protegida por la Ley 65-00 sobre Derecho de Autor de la República Dominicana
+  y por los tratados internacionales aplicables (Convenio de Berna).
+
+  El código fuente, la estructura, la interfaz, el diseño y los textos de esta
+  aplicación son obra original de Darien Gómez.
+
+  Queda prohibida su reproducción, distribución, comunicación pública,
+  transformación, descompilación o uso total o parcial, por cualquier medio o
+  procedimiento, sin autorización previa y por escrito del titular.
+
+  Esta herramienta es propiedad del autor y se pone a disposición de terceros
+  únicamente mediante licencia de uso expresa. Su entrega o utilización en el
+  marco de un proyecto no transfiere la titularidad de los derechos.
+
+  Contacto para licenciamiento: Darien Gómez
+================================================================================
+-->
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="author" content="Darien Gómez">
+<meta name="copyright" content="Copyright (c) 2026 Darien Gómez. Todos los derechos reservados.">
+<meta name="description" content="Aplicación de levantamiento del personal de salud para AIPEO.">
+<meta name="rights" content="Obra protegida - Ley 65-00 (Rep. Dominicana). Prohibida su reproduccion o distribucion sin autorizacion escrita del titular.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Levantamiento del Personal de Salud · AIPEO</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+:root{
+  --ink:#12233A; --paper:#F5F1EA; --clinic:#8A1F3D; --teal:#1F6F78;
+  --teal-b:#2A9D8F; --gold:#C8964A; --line:rgba(18,35,58,.14);
+  --bad:#C0392B; --mono:'IBM Plex Mono',monospace; --sans:'Archivo',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.45;padding-bottom:90px}
+header.app{position:sticky;top:0;z-index:40;background:var(--ink);color:#fff;
+  padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+header.app h1{font-size:1rem;font-weight:800}
+header.app .sub{font-family:var(--mono);font-size:9.5px;color:#9fc3c9;letter-spacing:.08em}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.badge-count{font-family:var(--mono);font-size:11px;background:var(--clinic);
+  padding:4px 10px;border-radius:20px;font-weight:600}
+.btn-icon{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;
+  border-radius:6px;padding:6px 9px;font-size:.8rem;cursor:pointer}
+main{max-width:760px;margin:0 auto;padding:16px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-weight:700;font-size:.95rem;border:none;border-radius:8px;
+  padding:13px 18px;cursor:pointer;transition:transform .08s;font-family:var(--sans)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--clinic);color:#fff}
+.btn-teal{background:var(--teal);color:#fff}
+.btn-ghost{background:transparent;color:var(--clinic);border:1.5px solid var(--clinic)}
+.btn-sm{padding:8px 12px;font-size:.85rem;border-radius:6px}
+.btn-block{width:100%}
+.btn-danger{background:transparent;color:var(--bad);border:1.5px solid var(--bad)}
+
+.center-card{background:#fff;border:1px solid var(--line);border-radius:10px;
+  padding:16px;margin-bottom:12px;cursor:pointer}
+.center-card h3{font-size:1.05rem;font-weight:800}
+.center-card .meta{font-family:var(--mono);font-size:10.5px;color:var(--teal)}
+.center-card .items-sum{font-family:var(--mono);font-size:10px;color:var(--clinic);
+  margin-top:6px;font-weight:600}
+.empty{text-align:center;padding:44px 20px;color:#7a8593}
+.empty .big{font-size:2.4rem;margin-bottom:10px}
+
+.section-nav{display:flex;gap:6px;margin:14px 0}
+.section-nav button{flex:1;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;
+  padding:10px 6px;border-radius:8px;border:1.5px solid var(--line);background:#fff;
+  font-weight:600;cursor:pointer}
+.section-nav button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.panel{display:none}.panel.show{display:block}
+fieldset{border:1px solid var(--line);border-radius:10px;background:#fff;
+  padding:16px;margin-bottom:14px}
+legend{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--clinic);font-weight:600;padding:0 8px}
+label{display:block;font-size:.82rem;font-weight:700;margin:12px 0 4px;color:#33445a}
+label:first-of-type{margin-top:0}
+input[type=text],input[type=number],input[type=date],input[type=tel],input[type=email],
+input[type=password],select,textarea{
+  width:100%;padding:12px;border:1.5px solid var(--line);border-radius:8px;
+  font-family:var(--sans);font-size:16px;background:#FBFAF7;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--teal-b);border-color:var(--teal-b)}
+textarea{min-height:70px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip-opt{border:1.5px solid var(--line);border-radius:20px;padding:9px 15px;
+  font-size:.85rem;font-weight:600;cursor:pointer;background:#fff;user-select:none}
+.chip-opt.sel{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+.search-bar{position:sticky;top:58px;z-index:30;background:var(--paper);padding:4px 0 10px}
+.person-card{border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:10px;
+  background:#fff;padding:14px;margin-bottom:10px;position:relative}
+.person-card .del{position:absolute;top:8px;right:8px;background:none;border:none;
+  color:var(--bad);font-size:1.1rem;cursor:pointer;font-weight:800;padding:4px 8px}
+.person-card h4{font-size:.85rem;font-weight:800;margin-bottom:8px;color:var(--teal);
+  font-family:var(--mono);letter-spacing:.06em}
+.person-card.incomplete{border-left-color:var(--gold)}
+
+.bottombar{position:fixed;bottom:0;left:0;right:0;background:#fff;
+  border-top:1px solid var(--line);padding:10px 14px;display:flex;gap:8px;z-index:40;
+  box-shadow:0 -4px 16px rgba(18,35,58,.08)}
+.bottombar .btn{flex:1}
+
+#toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;font-size:.85rem;font-weight:600;padding:11px 20px;
+  border-radius:24px;opacity:0;transition:all .25s;z-index:80;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+#authScreen{position:fixed;inset:0;z-index:100;background:var(--ink);
+  display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.auth-box{width:100%;max-width:380px;text-align:center;padding:20px 0}
+.auth-box .logo{font-size:2.5rem;margin-bottom:8px}
+.auth-box h2{color:#fff;font-size:1.25rem;font-weight:800;margin-bottom:4px}
+.auth-box .sub{font-family:var(--mono);font-size:10px;color:#9fc3c9;letter-spacing:.1em;margin-bottom:24px}
+.auth-box input{width:100%;padding:13px;border-radius:8px;border:1.5px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.08);color:#fff;font-size:16px;margin-bottom:10px}
+.auth-box input::placeholder{color:#6b7f95}
+.auth-box input:focus{outline:2px solid var(--teal-b)}
+.auth-box .msg{font-size:.82rem;color:#e8a0a0;min-height:20px;margin-bottom:6px}
+.auth-box .hint{font-size:.78rem;color:#8fa2b5;margin-top:14px;line-height:1.5;text-align:left}
+.auth-box .links{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.auth-box .links button{background:none;border:none;color:#9fc3c9;font-size:.8rem;
+  text-decoration:underline;cursor:pointer}
+.rc-display{background:rgba(42,157,143,.15);border:1.5px dashed var(--teal-b);
+  border-radius:10px;padding:18px;margin:14px 0}
+.rc-display .code{font-family:var(--mono);font-size:1.35rem;font-weight:700;
+  color:#7ED3B2;letter-spacing:.12em}
+.rc-display p{color:#c2cdd8;font-size:.8rem;margin-top:10px;line-height:1.5;text-align:left}
+
+#modal{position:fixed;inset:0;z-index:90;background:rgba(18,35,58,.55);
+  display:none;align-items:flex-end;justify-content:center}
+#modal.show{display:flex}
+.modal-box{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:760px;
+  padding:20px;max-height:82vh;overflow-y:auto}
+.modal-box h3{font-size:1.1rem;font-weight:800;margin-bottom:14px;color:var(--clinic)}
+.modal-box input{margin-bottom:8px}
+
+
+.copyright-note{font-family:var(--mono);font-size:9px;color:#8fa2b5;text-align:center;
+  margin-top:20px;line-height:1.6;letter-spacing:.02em}
+.copyright-note b{color:#9fc3c9}
+.copyright-foot{font-family:var(--mono);font-size:9px;color:#8a95a3;text-align:center;
+  margin-top:22px;padding-top:12px;border-top:1px solid var(--line);line-height:1.6}
+
+#printArea{display:none}
+@media print{
+  body>*{display:none!important}
+  #printArea{display:block!important;font-family:'Archivo',sans-serif;color:#12233A}
+  .pr-page{page-break-after:always;padding:6mm 2mm}
+  .pr-page:last-child{page-break-after:auto}
+  .pr-head{border-bottom:3px solid #8A1F3D;padding-bottom:8px;margin-bottom:12px}
+  .pr-head h1{font-size:14pt;font-weight:900}
+  .pr-head .sub{font-size:9pt;color:#1F6F78;font-family:'IBM Plex Mono',monospace}
+  .pr-sec{font-size:10.5pt;font-weight:800;color:#8A1F3D;margin:12px 0 6px;
+    border-bottom:1px solid #ccc;padding-bottom:3px;text-transform:uppercase}
+  table.pr{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8px}
+  table.pr th{background:#12233A;color:#fff;padding:5px 6px;text-align:left;font-size:8.5pt}
+  table.pr td{border:1px solid #bbb;padding:4px 6px}
+  .pr-kv{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;font-size:9pt}
+  .pr-kv div b{color:#1F6F78}
+  .pr-foot{margin-top:10px;font-size:8pt;color:#666;font-family:'IBM Plex Mono',monospace}
+}
+</style>
+</head>
+<body>
+
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="logo">👥</div>
+    <h2 id="authTitle">Personal de Salud · AIPEO</h2>
+    <div class="sub">OPS/OMS · PROYECTO KOICA · DATOS CIFRADOS</div>
+
+    <div id="authLogin">
+      <input type="text" id="li_user" placeholder="Usuario" autocomplete="off">
+      <input type="password" id="li_pass" placeholder="Contraseña">
+      <div class="msg" id="li_msg"></div>
+      <button class="btn btn-teal btn-block" onclick="doLogin()">Iniciar sesión</button>
+      <div class="links"><button onclick="showAuth('reset')">Olvidé mi contraseña</button></div>
+    </div>
+
+    <div id="authSetup" style="display:none">
+      <input type="text" id="su_user" placeholder="Nombre de usuario" autocomplete="off">
+      <input type="password" id="su_pass" placeholder="Contraseña (mín. 6)">
+      <input type="password" id="su_conf" placeholder="Confirmar contraseña">
+      <div class="msg" id="su_msg"></div>
+      <button class="btn btn-teal btn-block" onclick="doSetup()">Crear cuenta y entrar</button>
+      <div class="hint">Esta será la primera cuenta de la aplicación. Todos los datos quedan cifrados; al crear la cuenta recibirás un <b style="color:#7ED3B2">código de recuperación</b> para restablecer tu contraseña si la olvidas.</div>
+    </div>
+
+    <div id="authRC" style="display:none">
+      <div class="rc-display">
+        <div class="code" id="rcCode">----‑----‑----</div>
+        <p><b>Guarda este código ahora</b> (foto, papel o gestor de claves). Es la única forma de restablecer tu contraseña sin perder los datos. No se volverá a mostrar.</p>
+      </div>
+      <button class="btn btn-teal btn-block" onclick="rcConfirmed()">Ya lo guardé, continuar</button>
+    </div>
+
+    <div id="authReset" style="display:none">
+      <input type="text" id="rs_user" placeholder="Usuario" autocomplete="off">
+      <input type="text" id="rs_code" placeholder="Código de recuperación (XXXX-XXXX-XXXX)" autocomplete="off" style="font-family:'IBM Plex Mono',monospace;letter-spacing:.06em">
+      <input type="password" id="rs_pass" placeholder="Nueva contraseña (mín. 6)">
+      <input type="password" id="rs_conf" placeholder="Confirmar nueva contraseña">
+      <div class="msg" id="rs_msg"></div>
+      <button class="btn btn-teal btn-block" onclick="doReset()">Restablecer contraseña</button>
+      <div class="links"><button onclick="showAuth('login')">← Volver al inicio de sesión</button></div>
+    </div>
+
+    <div class="copyright-note">
+      © 2026 <b>Darien Gómez</b> · Todos los derechos reservados<br>
+      Obra protegida — Ley 65-00 de Derecho de Autor (Rep. Dominicana)<br>
+      Uso autorizado únicamente mediante licencia del titular
+    </div>
+  </div>
+</div>
+
+<header class="app">
+  <div>
+    <h1>Personal de Salud · AIPEO</h1>
+    <div class="sub" id="hdrUser">OPS/OMS · KOICA</div>
+  </div>
+  <div class="hdr-right">
+    <span class="badge-count" id="countBadge">0</span>
+    <button class="btn-icon" onclick="openSettings()" title="Cuenta">⚙</button>
+    <button class="btn-icon" onclick="logout()" title="Cerrar sesión">⏻</button>
+  </div>
+</header>
+
+<main id="viewList">
+  <button class="btn btn-primary btn-block" onclick="newCenter()" style="margin-bottom:16px">＋ Nuevo centro</button>
+  <div id="centerList"></div>
+  <div style="display:flex;gap:8px;margin-top:18px">
+    <button class="btn btn-teal btn-block" onclick="exportXLSX()">⬇ Excel</button>
+    <button class="btn btn-ghost btn-block" onclick="exportPDF()">⬇ PDF</button>
+  </div>
+  <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7a8593;text-align:center;margin-top:14px">
+    Datos cifrados y guardados en este dispositivo.
+  </p>
+</main>
+
+<main id="viewForm" style="display:none">
+  <button class="btn btn-sm btn-ghost" onclick="backToList()" style="margin-bottom:6px">← Centros</button>
+  <div class="section-nav">
+    <button class="active" onclick="showSec(0)">1·CENTRO</button>
+    <button onclick="showSec(1)">2·PERSONAL</button>
+  </div>
+
+  <div class="panel show" id="sec0">
+    <fieldset><legend>Datos del centro de salud</legend>
+      <div class="row2">
+        <div><label>Provincia</label>
+          <select id="f_provincia"><option>Dajabón</option><option>Elías Piña</option><option>Otra</option></select></div>
+        <div><label>Municipio</label><input type="text" id="f_municipio"></div>
+      </div>
+      <label>Centro (lista oficial OPS)</label>
+      <select id="f_censel"><option value="">— Seleccionar de la lista —</option></select>
+      <label>Nombre del centro *</label>
+      <input type="text" id="f_nombre" placeholder="Ej.: UNAP Los Cerezos">
+      <label>Código del establecimiento (SNS)</label>
+      <input type="text" id="f_codigo" placeholder="Código oficial del centro">
+      <label>Dirección del centro</label>
+      <textarea id="f_direccion" placeholder="Calle, sector, punto de referencia..."></textarea>
+      <label>Tipo de establecimiento</label>
+      <div class="chips" data-single id="f_tipo">
+        <span class="chip-opt">Hospital</span><span class="chip-opt">CPN</span>
+        <span class="chip-opt">UNAP</span><span class="chip-opt">Otro</span>
+      </div>
+      <label>Fecha del levantamiento</label>
+      <input type="date" id="f_fecha">
+    </fieldset>
+  </div>
+
+  <div class="panel" id="sec1">
+    <div class="search-bar">
+      <input type="text" id="personSearch" placeholder="🔎 Buscar por nombre o cargo..." oninput="renderPersons()">
+    </div>
+    <div id="personList"></div>
+    <button class="btn btn-teal btn-block" onclick="addPerson()" style="margin-top:6px">＋ Agregar persona</button>
+  </div>
+</main>
+
+<div class="bottombar" id="formBar" style="display:none">
+  <button class="btn btn-danger btn-sm" onclick="deleteCenter()">Eliminar</button>
+  <button class="btn btn-primary" onclick="saveCenter(true)">Guardar centro</button>
+</div>
+
+<datalist id="cargos">
+  <option>Médico/a general</option><option>Médico/a pediatra</option>
+  <option>Médico/a ginecólogo/a</option><option>Enfermero/a</option>
+  <option>Auxiliar de enfermería</option><option>Promotor/a de salud</option>
+  <option>Supervisor/a de UNAP</option><option>Bioanalista</option>
+  <option>Odontólogo/a</option><option>Psicólogo/a</option>
+  <option>Nutricionista</option><option>Personal administrativo</option>
+  <option>Encargado/a de estadística</option><option>Director/a del centro</option>
+</datalist>
+
+<div id="modal">
+  <div class="modal-box">
+    <h3>⚙ Cuenta y usuarios</h3>
+    <fieldset><legend>Cambiar mi contraseña</legend>
+      <input type="password" id="cp_new" placeholder="Nueva contraseña (mín. 6)">
+      <input type="password" id="cp_conf" placeholder="Confirmar">
+      <button class="btn btn-teal btn-sm btn-block" onclick="changePassword()" style="margin-top:6px">Actualizar contraseña</button>
+    </fieldset>
+    <fieldset><legend>Agregar usuario</legend>
+      <p style="font-size:.8rem;color:#556;margin-bottom:8px">El nuevo usuario accede a los mismos datos con su propia contraseña y código de recuperación.</p>
+      <input type="text" id="nu_user" placeholder="Nombre de usuario" autocomplete="off">
+      <input type="password" id="nu_pass" placeholder="Contraseña inicial (mín. 6)">
+      <button class="btn btn-teal btn-sm btn-block" onclick="addUser()" style="margin-top:6px">Crear usuario</button>
+      <div id="nu_rc" style="display:none;background:#f0f7f6;border:1.5px dashed var(--teal-b);border-radius:8px;padding:12px;margin-top:10px">
+        <b style="font-size:.8rem">Código de recuperación del nuevo usuario:</b>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:1.1rem;color:var(--teal);font-weight:700;margin-top:4px" id="nu_rc_code"></div>
+        <p style="font-size:.75rem;color:#556;margin-top:6px">Entrégaselo — no se volverá a mostrar.</p>
+      </div>
+    </fieldset>
+    <div id="userListBox" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#556;margin:8px 0"></div>
+    <button class="btn btn-ghost btn-block btn-sm" onclick="closeSettings()">Cerrar</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="printArea"></div>
+
+<script>
+/* ============ almacenamiento ============ */
+const store = {
+  mem:{},
+  async get(k){ try{ if(window.storage){const r=await window.storage.get(k);return r?r.value:null;} }catch(e){}
+    try{ if(typeof localStorage!=='undefined') return localStorage.getItem(k); }catch(e){}
+    return this.mem[k]??null; },
+  async set(k,v){ try{ if(window.storage){await window.storage.set(k,v);return;} }catch(e){}
+    try{ if(typeof localStorage!=='undefined'){localStorage.setItem(k,v);return;} }catch(e){}
+    this.mem[k]=v; },
+  async del(k){ try{ if(window.storage) await window.storage.delete(k); }catch(e){}
+    try{ if(typeof localStorage!=='undefined') localStorage.removeItem(k); }catch(e){}
+    delete this.mem[k]; }
+};
+
+/* ============ criptografía ============ */
+const C = {
+  enc:new TextEncoder(), dec:new TextDecoder(),
+  b64(b){return btoa(String.fromCharCode(...new Uint8Array(b)));},
+  ub64(s){return Uint8Array.from(atob(s),c=>c.charCodeAt(0));},
+  async kek(secret,salt){
+    const base=await crypto.subtle.importKey('raw',this.enc.encode(secret),'PBKDF2',false,['deriveKey']);
+    return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},
+      base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  },
+  async encRaw(key,text){
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,this.enc.encode(text));
+    return JSON.stringify({iv:this.b64(iv),ct:this.b64(ct)});
+  },
+  async decRaw(key,payload){
+    const o=JSON.parse(payload);
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:this.ub64(o.iv)},key,this.ub64(o.ct));
+    return this.dec.decode(pt);
+  },
+  async importMaster(rawB64){
+    return crypto.subtle.importKey('raw',this.ub64(rawB64),{name:'AES-GCM'},false,['encrypt','decrypt']);
+  },
+  genRC(){
+    const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    const g=n=>Array.from(crypto.getRandomValues(new Uint8Array(n))).map(x=>A[x%A.length]).join('');
+    return g(4)+'-'+g(4)+'-'+g(4);
+  }
+};
+
+const K_USERS='aipeo-users', K_DATA='aipeo-data';
+let masterKey=null, masterRawB64=null, currentUser=null;
+let DB={centros:[]};
+let currentId=null;
+let personas=[];
+
+/* ============ autenticación ============ */
+function showAuth(which){
+  ['authLogin','authSetup','authRC','authReset'].forEach(function(id){
+    document.getElementById(id).style.display='none';
+  });
+  const map={login:'authLogin',setup:'authSetup',rc:'authRC',reset:'authReset'};
+  document.getElementById(map[which]).style.display='block';
+  document.getElementById('authTitle').textContent =
+    which==='setup' ? 'Crear cuenta inicial' :
+    which==='reset' ? 'Restablecer contraseña' :
+    which==='rc' ? 'Código de recuperación' : 'Personal de Salud · AIPEO';
+}
+async function initAuth(){
+  const users = await store.get(K_USERS);
+  showAuth(users ? 'login' : 'setup');
+  [['li_pass',doLogin],['su_conf',doSetup],['rs_conf',doReset]].forEach(function(pair){
+    document.getElementById(pair[0]).addEventListener('keydown',function(e){
+      if(e.key==='Enter') pair[1]();
+    });
+  });
+}
+async function getUsers(){ const r=await store.get(K_USERS); return r?JSON.parse(r):null; }
+async function saveUsers(u){ await store.set(K_USERS, JSON.stringify(u)); }
+async function wrapMasterFor(secret){
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const kek=await C.kek(secret,salt);
+  return { salt:C.b64(salt), wrap: await C.encRaw(kek, masterRawB64) };
+}
+
+async function doSetup(){
+  const u=document.getElementById('su_user').value.trim().toLowerCase();
+  const p=document.getElementById('su_pass').value, c=document.getElementById('su_conf').value;
+  const msg=document.getElementById('su_msg');
+  if(!u){msg.textContent='Ingresa un nombre de usuario.';return;}
+  if(p.length<6){msg.textContent='La contraseña debe tener al menos 6 caracteres.';return;}
+  if(p!==c){msg.textContent='Las contraseñas no coinciden.';return;}
+  const raw=crypto.getRandomValues(new Uint8Array(32));
+  masterRawB64=C.b64(raw);
+  masterKey=await C.importMaster(masterRawB64);
+  const rc=C.genRC();
+  const users={};
+  users[u]={ pw: await wrapMasterFor(p), rc: await wrapMasterFor(rc) };
+  await saveUsers(users);
+  DB={centros:[]};
+  await persist();
+  currentUser=u;
+  document.getElementById('rcCode').textContent=rc;
+  showAuth('rc');
+}
+function rcConfirmed(){ enterApp(); }
+
+async function doLogin(){
+  const u=document.getElementById('li_user').value.trim().toLowerCase();
+  const p=document.getElementById('li_pass').value;
+  const msg=document.getElementById('li_msg');
+  const users=await getUsers();
+  if(!users || !users[u]){msg.textContent='Usuario no encontrado.';return;}
+  try{
+    const kek=await C.kek(p, C.ub64(users[u].pw.salt));
+    masterRawB64=await C.decRaw(kek, users[u].pw.wrap);
+    masterKey=await C.importMaster(masterRawB64);
+    currentUser=u;
+    await load();
+    enterApp();
+  }catch(e){
+    msg.textContent='Contraseña incorrecta.';
+    document.getElementById('li_pass').value='';
+  }
+}
+
+async function doReset(){
+  const u=document.getElementById('rs_user').value.trim().toLowerCase();
+  const code=document.getElementById('rs_code').value.trim().toUpperCase();
+  const p=document.getElementById('rs_pass').value, c=document.getElementById('rs_conf').value;
+  const msg=document.getElementById('rs_msg');
+  const users=await getUsers();
+  if(!users || !users[u]){msg.textContent='Usuario no encontrado.';return;}
+  if(p.length<6){msg.textContent='La nueva contraseña debe tener al menos 6 caracteres.';return;}
+  if(p!==c){msg.textContent='Las contraseñas no coinciden.';return;}
+  try{
+    const kek=await C.kek(code, C.ub64(users[u].rc.salt));
+    masterRawB64=await C.decRaw(kek, users[u].rc.wrap);
+    masterKey=await C.importMaster(masterRawB64);
+    users[u].pw=await wrapMasterFor(p);
+    await saveUsers(users);
+    currentUser=u;
+    await load();
+    toast('✓ Contraseña restablecida');
+    enterApp();
+  }catch(e){
+    msg.textContent='Código de recuperación incorrecto.';
+  }
+}
+
+function enterApp(){
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('hdrUser').textContent='👤 '+currentUser+' · OPS-KOICA';
+  ['li_user','li_pass','su_user','su_pass','su_conf','rs_user','rs_code','rs_pass','rs_conf']
+    .forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('li_msg').textContent='';
+  renderList();
+}
+function logout(){
+  saveCenter(false);
+  masterKey=null; masterRawB64=null; currentUser=null; DB={centros:[]};
+  document.getElementById('viewForm').style.display='none';
+  document.getElementById('formBar').style.display='none';
+  document.getElementById('viewList').style.display='block';
+  document.getElementById('authScreen').style.display='flex';
+  showAuth('login');
+}
+
+function openSettings(){ document.getElementById('modal').classList.add('show'); refreshUserList(); }
+function closeSettings(){
+  document.getElementById('modal').classList.remove('show');
+  document.getElementById('nu_rc').style.display='none';
+  ['cp_new','cp_conf','nu_user','nu_pass'].forEach(function(id){ document.getElementById(id).value=''; });
+}
+async function refreshUserList(){
+  const users=await getUsers();
+  document.getElementById('userListBox').textContent =
+    'Usuarios registrados: ' + (users?Object.keys(users).join(', '):'—');
+}
+async function changePassword(){
+  const p=document.getElementById('cp_new').value, c=document.getElementById('cp_conf').value;
+  if(p.length<6){toast('Mínimo 6 caracteres');return;}
+  if(p!==c){toast('No coinciden');return;}
+  const users=await getUsers();
+  users[currentUser].pw=await wrapMasterFor(p);
+  await saveUsers(users);
+  document.getElementById('cp_new').value='';document.getElementById('cp_conf').value='';
+  toast('✓ Contraseña actualizada');
+}
+async function addUser(){
+  const u=document.getElementById('nu_user').value.trim().toLowerCase();
+  const p=document.getElementById('nu_pass').value;
+  if(!u){toast('Ingresa el nombre de usuario');return;}
+  if(p.length<6){toast('Contraseña: mínimo 6 caracteres');return;}
+  const users=await getUsers();
+  if(users[u]){toast('Ese usuario ya existe');return;}
+  const rc=C.genRC();
+  users[u]={ pw:await wrapMasterFor(p), rc:await wrapMasterFor(rc) };
+  await saveUsers(users);
+  document.getElementById('nu_rc_code').textContent=rc;
+  document.getElementById('nu_rc').style.display='block';
+  document.getElementById('nu_user').value='';document.getElementById('nu_pass').value='';
+  refreshUserList();
+  toast('✓ Usuario creado');
+}
+
+/* ============ datos ============ */
+async function load(){
+  const raw=await store.get(K_DATA);
+  if(raw&&masterKey){
+    try{ DB=JSON.parse(await C.decRaw(masterKey,raw)); }catch(e){ DB={centros:[]}; }
+  }
+}
+async function persist(){
+  if(!masterKey) return;
+  await store.set(K_DATA, await C.encRaw(masterKey, JSON.stringify(DB)));
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;
+  t.classList.add('show');setTimeout(function(){t.classList.remove('show');},1800);}
+function uid(){ return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+/* ============ chips ============ */
+function initChips(scope){
+  scope.querySelectorAll('.chips').forEach(function(g){
+    g.querySelectorAll('.chip-opt').forEach(function(c){
+      c.onclick=function(){
+        g.querySelectorAll('.chip-opt').forEach(function(x){x.classList.remove('sel');});
+        c.classList.add('sel');
+      };
+    });
+  });
+}
+function chipVal(id){const s=document.querySelector('#'+id+' .chip-opt.sel');return s?s.textContent.trim():'';}
+function setChip(id,val){
+  document.querySelectorAll('#'+id+' .chip-opt').forEach(function(c){
+    c.classList.remove('sel');
+    if(c.textContent.trim()===val) c.classList.add('sel');
+  });
+}
+
+/* ============ lista de centros ============ */
+function renderList(){
+  const list=document.getElementById('centerList');
+  document.getElementById('countBadge').textContent=DB.centros.length;
+  if(!DB.centros.length){
+    list.innerHTML='<div class="empty"><div class="big">👥</div><b>Sin centros registrados</b><br>Toca "Nuevo centro" para iniciar.</div>';
+    return;
+  }
+  list.innerHTML=DB.centros.map(function(c){
+    const arr=c.personal||[];
+    const n=arr.length;
+    const comp=arr.filter(function(p){return p.nombre&&p.cargo;}).length;
+    return '<div class="center-card" data-open="'+c.id+'">'+
+      '<h3>'+esc(c.nombre||'(sin nombre)')+'</h3>'+
+      '<div class="meta">'+esc(c.tipo||'—')+' · '+esc(c.provincia||'')+' '+
+        (c.municipio?'· '+esc(c.municipio):'')+' '+(c.fecha?'· '+esc(c.fecha):'')+'</div>'+
+      '<div class="items-sum">'+n+' persona'+(n===1?'':'s')+' registrada'+(n===1?'':'s')+
+        (comp<n?' · '+(n-comp)+' incompleta(s)':'')+'</div>'+
+    '</div>';
+  }).join('');
+}
+document.getElementById('centerList').addEventListener('click', function(e){
+  const card=e.target.closest('[data-open]');
+  if(card) openCenter(card.dataset.open);
+});
+
+/* ============ formulario ============ */
+function newCenter(){ currentId=null; clearForm();
+  document.getElementById('f_fecha').value=new Date().toISOString().slice(0,10); showFormUI(); }
+function openCenter(id){ currentId=id;
+  const c=DB.centros.find(function(x){return x.id===id;});
+  if(!c) return;
+  clearForm(); fillForm(c); showFormUI(); }
+function showFormUI(){
+  document.getElementById('viewList').style.display='none';
+  document.getElementById('viewForm').style.display='block';
+  document.getElementById('formBar').style.display='flex';
+  showSec(0); window.scrollTo(0,0);
+}
+function backToList(){ saveCenter(false);
+  document.getElementById('viewForm').style.display='none';
+  document.getElementById('formBar').style.display='none';
+  document.getElementById('viewList').style.display='block'; renderList(); }
+function showSec(n){
+  document.querySelectorAll('.panel').forEach(function(p,i){p.classList.toggle('show',i===n);});
+  document.querySelectorAll('.section-nav button').forEach(function(b,i){b.classList.toggle('active',i===n);});
+  if(n===1) renderPersons();
+  window.scrollTo(0,0);
+}
+function clearForm(){
+  ['f_nombre','f_codigo','f_municipio','f_direccion'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('f_provincia').selectedIndex=0;
+  if(typeof fillCenSel==='function') fillCenSel();
+  document.getElementById('f_fecha').value='';
+  document.getElementById('personSearch').value='';
+  document.querySelectorAll('#viewForm .chip-opt').forEach(function(c){c.classList.remove('sel');});
+  personas=[];
+}
+function fillForm(c){
+  document.getElementById('f_nombre').value=c.nombre||'';
+  document.getElementById('f_codigo').value=c.codigo||'';
+  document.getElementById('f_provincia').value=c.provincia||'Dajabón';
+  if(typeof syncCenSel==='function'){ document.getElementById('f_nombre').value=c.nombre||''; syncCenSel(); }
+  document.getElementById('f_municipio').value=c.municipio||'';
+  document.getElementById('f_direccion').value=c.direccion||'';
+  setChip('f_tipo',c.tipo||'');
+  document.getElementById('f_fecha').value=c.fecha||'';
+  personas=JSON.parse(JSON.stringify(c.personal||[]));
+}
+function collect(){
+  return { id: currentId||uid(),
+    nombre:document.getElementById('f_nombre').value.trim(),
+    codigo:document.getElementById('f_codigo').value.trim(),
+    provincia:document.getElementById('f_provincia').value,
+    municipio:document.getElementById('f_municipio').value.trim(),
+    direccion:document.getElementById('f_direccion').value.trim(),
+    tipo:chipVal('f_tipo'), fecha:document.getElementById('f_fecha').value,
+    personal:JSON.parse(JSON.stringify(personas)) };
+}
+async function saveCenter(notify){
+  if(!masterKey) return;
+  const d=collect();
+  if(!d.nombre && !d.personal.length){ if(notify)toast('Agrega el nombre del centro'); return; }
+  const i=DB.centros.findIndex(function(x){return x.id===d.id;});
+  if(i>=0)DB.centros[i]=d; else DB.centros.push(d);
+  currentId=d.id;
+  await persist();
+  if(notify){ toast('✓ Centro guardado'); backToList(); }
+}
+async function deleteCenter(){
+  if(currentId&&confirm('¿Eliminar este centro y todo su personal registrado?')){
+    DB.centros=DB.centros.filter(function(x){return x.id!==currentId;});
+    await persist(); currentId=null; backToList(); toast('Centro eliminado');
+  }
+}
+
+/* ============ personal (delegación de eventos) ============ */
+function addPerson(){
+  personas.push({nombre:'',telefono:'',correo:'',cargo:''});
+  document.getElementById('personSearch').value='';
+  renderPersons();
+  setTimeout(function(){
+    const inputs=document.querySelectorAll('#personList input[data-field="nombre"]');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  },60);
+}
+function attr(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function renderPersons(){
+  const q=(document.getElementById('personSearch').value||'').toLowerCase();
+  const el=document.getElementById('personList');
+  if(!personas.length){
+    el.innerHTML='<div class="empty" style="padding:26px"><b>Sin personal registrado</b><br>Toca "Agregar persona" para iniciar.</div>';
+    return;
+  }
+  const vis=personas.map(function(p,idx){return {p:p,idx:idx};})
+    .filter(function(o){
+      if(!q) return true;
+      return (o.p.nombre||'').toLowerCase().indexOf(q)>=0 || (o.p.cargo||'').toLowerCase().indexOf(q)>=0;
+    });
+  el.innerHTML=vis.map(function(o){
+    const p=o.p, idx=o.idx;
+    const inc = !(p.nombre && p.cargo);
+    return '<div class="person-card '+(inc?'incomplete':'')+'">'+
+      '<button type="button" class="del" data-del="'+idx+'">✕</button>'+
+      '<h4>PERSONA '+(idx+1)+(inc?' · incompleta':'')+'</h4>'+
+      '<label>Nombre</label>'+
+      '<input type="text" data-idx="'+idx+'" data-field="nombre" value="'+attr(p.nombre)+'">'+
+      '<div class="row2">'+
+        '<div><label>Teléfono</label>'+
+        '<input type="tel" data-idx="'+idx+'" data-field="telefono" value="'+attr(p.telefono)+'"></div>'+
+        '<div><label>Cargo</label>'+
+        '<input type="text" list="cargos" data-idx="'+idx+'" data-field="cargo" value="'+attr(p.cargo)+'"></div>'+
+      '</div>'+
+      '<label>Correo</label>'+
+      '<input type="email" data-idx="'+idx+'" data-field="correo" value="'+attr(p.correo)+'">'+
+    '</div>';
+  }).join('') || '<div class="empty" style="padding:24px">Sin resultados para la búsqueda.</div>';
+}
+document.getElementById('personList').addEventListener('input', function(e){
+  const inp=e.target.closest('input[data-idx]');
+  if(!inp) return;
+  personas[parseInt(inp.dataset.idx)][inp.dataset.field]=inp.value;
+});
+document.getElementById('personList').addEventListener('click', function(e){
+  const b=e.target.closest('button[data-del]');
+  if(!b) return;
+  const i=parseInt(b.dataset.del);
+  if(confirm('¿Eliminar esta persona del registro?')){
+    personas.splice(i,1);
+    renderPersons();
+  }
+});
+
+/* ============ export XLSX ============ */
+function exportXLSX(){
+  if(!DB.centros.length){toast('No hay datos para exportar');return;}
+  const wb=XLSX.utils.book_new();
+
+  const rows=[];
+  DB.centros.forEach(function(c){
+    (c.personal||[]).forEach(function(p,i){
+      rows.push({
+        'Provincia':c.provincia||'','Municipio':c.municipio||'','Código SNS':c.codigo||'','Centro de Salud':c.nombre||'',
+        'Dirección del Centro':c.direccion||'','Tipo':c.tipo||'','N':i+1,
+        'Nombre':p.nombre||'','Teléfono':p.telefono||'','Correo':p.correo||'','Cargo':p.cargo||'',
+        'Fecha levantamiento':c.fecha||''
+      });
+    });
+  });
+  const wsP=XLSX.utils.json_to_sheet(rows.length?rows:[{'Provincia':'—'}]);
+  wsP['!cols']=[{wch:12},{wch:16},{wch:12},{wch:28},{wch:30},{wch:10},{wch:4},
+                {wch:28},{wch:14},{wch:26},{wch:22},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, wsP, 'Personal');
+
+  const wsC=XLSX.utils.json_to_sheet(DB.centros.map(function(c){
+    return {'Provincia':c.provincia||'','Municipio':c.municipio||'','Código SNS':c.codigo||'','Centro de Salud':c.nombre||'',
+      'Dirección':c.direccion||'','Tipo':c.tipo||'','Total personal':(c.personal||[]).length,
+      'Fecha levantamiento':c.fecha||''};
+  }));
+  wsC['!cols']=[{wch:12},{wch:16},{wch:12},{wch:28},{wch:32},{wch:10},{wch:13},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, wsC, 'Centros');
+
+  const porCargo={};
+  DB.centros.forEach(function(c){
+    (c.personal||[]).forEach(function(p){
+      const k=(p.cargo||'(sin cargo)').trim();
+      porCargo[k]=(porCargo[k]||0)+1;
+    });
+  });
+  const res=[['Cargo','Cantidad']];
+  Object.keys(porCargo).sort().forEach(function(k){res.push([k,porCargo[k]]);});
+  res.push(['TOTAL', Object.keys(porCargo).reduce(function(a,k){return a+porCargo[k];},0)]);
+  const wsR=XLSX.utils.aoa_to_sheet(res);
+  wsR['!cols']=[{wch:30},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, wsR, 'Resumen por cargo');
+
+  XLSX.writeFile(wb,'Levantamiento_Personal_Salud_AIPEO.xlsx');
+  toast('✓ Excel generado');
+}
+
+/* ============ export PDF ============ */
+function esc(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function exportPDF(){
+  if(!DB.centros.length){toast('No hay datos para exportar');return;}
+  const pa=document.getElementById('printArea');
+  pa.innerHTML=DB.centros.map(function(c){
+    const ps=c.personal||[];
+    let tabla;
+    if(ps.length){
+      tabla='<table class="pr"><tr><th>#</th><th>Nombre</th><th>Cargo</th><th>Teléfono</th><th>Correo</th></tr>'+
+        ps.map(function(p,i){
+          return '<tr><td>'+(i+1)+'</td><td>'+(esc(p.nombre)||'—')+'</td><td>'+(esc(p.cargo)||'—')+
+                 '</td><td>'+(esc(p.telefono)||'—')+'</td><td>'+(esc(p.correo)||'—')+'</td></tr>';
+        }).join('')+'</table>';
+    } else {
+      tabla='<p style="font-size:9pt">Sin personal registrado.</p>';
+    }
+    return '<div class="pr-page">'+
+      '<div class="pr-head">'+
+        '<h1>Levantamiento del Personal de Salud para AIPEO</h1>'+
+        '<div class="sub">'+esc(c.nombre)+' · '+esc(c.tipo)+' · '+esc(c.provincia)+
+          (c.municipio?' · '+esc(c.municipio):'')+(c.codigo?' · Cód. SNS: '+esc(c.codigo):'')+' · Levantado por: '+esc(currentUser||'')+'</div>'+
+      '</div>'+
+      '<div class="pr-sec">Datos del centro de salud</div>'+
+      '<div class="pr-kv">'+
+        '<div><b>Provincia:</b> '+(esc(c.provincia)||'—')+'</div>'+
+        '<div><b>Municipio:</b> '+(esc(c.municipio)||'—')+'</div>'+
+        '<div><b>Nombre del centro:</b> '+(esc(c.nombre)||'—')+'</div>'+
+        '<div><b>Código SNS:</b> '+(esc(c.codigo)||'—')+'</div>'+
+        '<div><b>Fecha:</b> '+(esc(c.fecha)||'—')+'</div>'+
+      '</div>'+
+      '<p style="font-size:9pt;margin-top:4px"><b style="color:#1F6F78">Dirección:</b> '+(esc(c.direccion)||'—')+'</p>'+
+      '<div class="pr-sec">Datos del personal ('+ps.length+')</div>'+
+      tabla+
+      '<div class="pr-foot">Levantamiento del personal de salud para AIPEO · OPS-OMS / Proyecto KOICA · Provincias Dajabón y Elías Piña<br>© 2026 Darien Gómez — Documento generado con software propietario. Todos los derechos reservados.</div>'+
+    '</div>';
+  }).join('');
+  window.print();
+}
+
+const CENTROS=[
+["Dajabón","LOMA DE CABRERA","RAMON ADRIANO VILLALONA"],
+["Dajabón","DAJABON","MATIAS RAMON MELLA"],
+["Dajabón","RESTAURACION","RESTAURACION"],
+["Dajabón","PARTIDO","PARTIDO"],
+["Dajabón","LOMA DE CABRERA","LUPERON"],
+["Dajabón","LOMA DE CABRERA","SANTIAGO DE LA CRUZ"],
+["Dajabón","LOMA DE CABRERA","RIVERA DEL MASACRE"],
+["Dajabón","LOMA DE CABRERA","AGUACATE"],
+["Dajabón","EL PINO","MANUEL BUENO"],
+["Dajabón","RESTAURACION","MARIANO CESTEROS"],
+["Dajabón","DAJABON","LA FE"],
+["Dajabón","DAJABON","SECTOR NORTE"],
+["Dajabón","DAJABON","LA MANICERA"],
+["Dajabón","DAJABON","VALENTIN SALINERO"],
+["Dajabón","PARTIDO","PARTIDO DAJABON"],
+["Dajabón","PARTIDO","VACA GORDA"],
+["Dajabón","EL PINO","EL PINO DAJABON"],
+["Dajabón","PARTIDO","LA GORRA"],
+["Dajabón","DAJABON","CHACUEY"],
+["Dajabón","DAJABON","PLAZA BELLER"],
+["Dajabón","DAJABON","SABANA LARGA"],
+["Dajabón","DAJABON","LA CURVA"],
+["Dajabón","DAJABON","LOS MICHES"],
+["Dajabón","DAJABON","CAÑONGO"],
+["Dajabón","DAJABON","LA VIGIA"],
+["Dajabón","RESTAURACION","TRINITARIA"],
+["Dajabón","RESTAURACION","GUAYAJAYUCO"],
+["Dajabón","RESTAURACION","LOS CEREZOS"],
+["Dajabón","RESTAURACION","LAS ROSAS"],
+["Dajabón","RESTAURACION","RIO LIMPIO"],
+["Dajabón","LOMA DE CABRERA","CAPOTILLO"],
+["Dajabón","LOMA DE CABRERA","HIPOLITO BILLINI"],
+["Dajabón","DAJABON","CENTRO CLINICO Y DIAGNOSTICO DE ATENCION"],
+["Dajabón","RESTAURACION","CRUZ DE CABRERA"],
+["Dajabón","DAJABON","LOYOLA"],
+["Elías Piña","BANICA","BANICA"],
+["Elías Piña","COMENDADOR","ROSA DUARTE"],
+["Elías Piña","HONDO VALLE","HONDO VALLE"],
+["Elías Piña","BANICA","HIGUERITO"],
+["Elías Piña","BANICA","SABANA MULA"],
+["Elías Piña","BANICA","SABANA CRUZ"],
+["Elías Piña","EL LLANO","ROSA LA PIEDRA"],
+["Elías Piña","PEDRO SANTANA","LAS PALMAS"],
+["Elías Piña","EL LLANO","EL LLANO"],
+["Elías Piña","COMENDADOR","MACASIAS"],
+["Elías Piña","COMENDADOR","RINCONCITO"],
+["Elías Piña","COMENDADOR","PINZON"],
+["Elías Piña","COMENDADOR","POTROSO"],
+["Elías Piña","COMENDADOR","HATO VIEJO"],
+["Elías Piña","COMENDADOR","SABANA LARGA"],
+["Elías Piña","COMENDADOR","GUAYABO"],
+["Elías Piña","HONDO VALLE","RANCHO LA GUARDIA"],
+["Elías Piña","JUAN SANTIAGO","JUAN SANTIAGO"],
+["Elías Piña","COMENDADOR","LAS DELICIAS"],
+["Elías Piña","COMENDADOR","LA GALLERA"],
+["Elías Piña","EL LLANO","GUANITO"],
+["Elías Piña","PEDRO SANTANA","PEDRO SANTANA"]
+];
+function fillCenSel(){
+  var prov=document.getElementById('f_provincia').value;
+  var sel=document.getElementById('f_censel');
+  if(!sel) return;
+  var opts=CENTROS.filter(function(c){return c[0]===prov;});
+  var html='<option value="">— Seleccionar de la lista —</option>';
+  for(var i=0;i<opts.length;i++){ html+='<option value="'+i+'">'+opts[i][2]+' ('+opts[i][1]+')</option>'; }
+  html+='<option value="__m">✎ Escribir manualmente</option>';
+  sel.innerHTML=html;
+}
+function onCenSel(){
+  var sel=document.getElementById('f_censel');
+  var v=sel.value;
+  if(v===''){ return; }
+  if(v==='__m'){ document.getElementById('f_nombre').value=''; document.getElementById('f_nombre').focus(); return; }
+  var prov=document.getElementById('f_provincia').value;
+  var opts=CENTROS.filter(function(c){return c[0]===prov;});
+  var c=opts[parseInt(v)];
+  if(c){ document.getElementById('f_nombre').value=c[2]; document.getElementById('f_municipio').value=c[1]; }
+}
+function syncCenSel(){
+  fillCenSel();
+  var sel=document.getElementById('f_censel');
+  var prov=document.getElementById('f_provincia').value;
+  var nombre=document.getElementById('f_nombre').value.trim().toUpperCase();
+  var opts=CENTROS.filter(function(c){return c[0]===prov;});
+  for(var i=0;i<opts.length;i++){ if(opts[i][2]===nombre){ sel.value=String(i); return; } }
+  sel.value='';
+}
+document.getElementById('f_provincia').addEventListener('change', fillCenSel);
+document.getElementById('f_censel').addEventListener('change', onCenSel);
+
+
+/* ===== Aviso de derechos de autor ===== */
+(function(){
+  try{
+    console.log('%cLevantamiento del Personal de Salud · AIPEO','font-size:14px;font-weight:bold;color:#8A1F3D');
+    console.log('%cCopyright (c) 2026 Darien Gómez. Todos los derechos reservados.\nObra protegida por la Ley 65-00 de Derecho de Autor (Rep. Dominicana).\nProhibida su reproduccion o distribucion sin autorizacion escrita del titular.','color:#1F6F78');
+  }catch(e){}
+})();
+
+/* ============ init ============ */
+initChips(document);
+fillCenSel();
+initAuth();
+</script>
+</body>
+</html>
