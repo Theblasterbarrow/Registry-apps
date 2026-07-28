@@ -1,0 +1,38 @@
+{
+  "fecha_utc": "2026-07-28T05:22:05.792889+00:00",
+  "autor": "Darien Gómez",
+  "version": "2.0 (PWA offline)",
+  "obras": [
+    {
+      "archivo": "index.html",
+      "bytes": 2177,
+      "sha256": "d1301cf849864dd7ea0ff73b1daf93eb4722eceea27daa74bb464cb44fd25be3",
+      "sha512": "65f44c2912053201d896c543a1188e5a98fd8dca71c3e4184ba19a334b7990074dc8ebcea9c4fc7d2cdda92cd574a31de6197b07fe872ff6ea7c9afa9ff0c218"
+    },
+    {
+      "archivo": "levantamiento-insumos.html",
+      "bytes": 942784,
+      "sha256": "c109238de877a87868dfaf31ba4b5abf285c326fc39a494753ed6e5a3b61c4f6",
+      "sha512": "fcd52704f45ca8390a4d6eed4899c4d42e9d291f9dc6c6ffaaeb826e1fbff85b69c86f18c46d877f1cb21b6f9e923f4c2f4259e7c39e005f0f546ba9404f8d19"
+    },
+    {
+      "archivo": "levantamiento-personal-aipeo.html",
+      "bytes": 931152,
+      "sha256": "e7e4da4ae2b6ea3ac3fd210d8fcb134b9eb6d4a106a25e6705a54c7a4916ecfd",
+      "sha512": "3b416f781aca6f351f29bf8230971695432bc1cba4d7e3a459f1e07d63f4afc665c7d2d9b3c1fc0c9c602a8540736ed4e6cf99c594e00a6ce41ccfb4eb1c83a0"
+    },
+    {
+      "archivo": "levantamiento-sip.html",
+      "bytes": 953454,
+      "sha256": "bb7bfdb29b01835785d91839987d905be50f4805ed061faa1fc60285087fd870",
+      "sha512": "5615717adb87b2dcad20718d6d62488652c9265444f722abe700dcffe59e594cbd7e97abb2031eaacddcc0840c2755bfdd9bf76d29658c353fa33d1282f70888"
+    },
+    {
+      "archivo": "sw.js",
+      "bytes": 1251,
+      "sha256": "cb01c44c471503feee49e05a242067eb5a2e16c01e38b05a387a7866752a1879",
+      "sha512": "9e9cfed7c9665d948e54bb411c012ffd456f75237cbad64cde0c3cd1cb58a6056a5db507f32923d27437c1f9a7917d2ae2584fd77673c69fe828790edad7e46a"
+    }
+  ],
+  "hash_maestro_conjunto": "e640f5e93cbf87b43ee2135290585e4b1db7a3a68379de26d02df3622ea70fea"
+}

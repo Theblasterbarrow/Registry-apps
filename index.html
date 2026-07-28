@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12233A">
+<title>Levantamientos OPS/KOICA · Dajabón - Elías Piña</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;700;900&family=IBM+Plex+Mono:wght@500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Archivo',sans-serif;background:#12233A;color:#F5F1EA;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.wrap{max-width:420px;width:100%;text-align:center}
+h1{font-size:1.5rem;font-weight:900;margin-bottom:4px}
+.sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9fc3c9;
+  letter-spacing:.14em;margin-bottom:30px}
+a.app{display:block;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.15);
+  border-radius:12px;padding:18px 20px;margin-bottom:12px;text-decoration:none;
+  color:#F5F1EA;text-align:left;transition:border-color .15s}
+a.app:active{border-color:#2A9D8F}
+a.app b{display:block;font-size:1.05rem}
+a.app span{font-size:.8rem;color:#9fc3c9}
+.foot{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#7d8fa3;
+  margin-top:26px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Levantamientos de Campo</h1>
+  <div class="sub">OPS/OMS · PROYECTO KOICA · DAJABÓN — ELÍAS PIÑA</div>
+  <a class="app" href="./levantamiento-sip.html"><b>🖥 Levantamiento SIP+</b><span>Equipos, red y personal para el SIP+</span></a>
+  <a class="app" href="./levantamiento-insumos.html"><b>🏥 Levantamiento de Insumos</b><span>Necesidades de insumos y nevera de vacunas</span></a>
+  <a class="app" href="./levantamiento-personal-aipeo.html"><b>👥 Personal de Salud · AIPEO</b><span>Registro del personal por centro</span></a>
+  <div class="foot">
+    © 2026 Darien Gómez · Todos los derechos reservados<br>
+    Obra protegida — Ley 65-00 (Rep. Dominicana)
+  </div>
+</div>
+<script>
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  navigator.serviceWorker.register('./sw.js').catch(function(){});
+}
+</script>
+</body>
+</html>
