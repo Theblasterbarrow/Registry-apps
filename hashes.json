@@ -1,7 +1,7 @@
 {
-  "fecha_utc": "2026-08-06T01:43:59.623892+00:00",
+  "fecha_utc": "2026-08-06T02:05:09.783963+00:00",
   "autor": "Darien Gómez",
-  "version": "2.3 (cargos y pasantía)",
+  "version": "2.4 (Médico Pasante + fecha)",
   "obras": [
     {
       "archivo": "index.html",
@@ -17,9 +17,9 @@
     },
     {
       "archivo": "levantamiento-personal-aipeo.html",
-      "bytes": 936190,
-      "sha256": "7dbe70eed69c1482b5c03d518366c694c3b6ecf8fe29662f4d91b35857af7471",
-      "sha512": "2ed2cbe91c1fc2b2864f2955049b54bb2fae879f329f2b2fe2255c20f9ba4ce337121595b352b031691db35178cfcf6396a4375ed80006e02cddd2d00c71bcbb"
+      "bytes": 938113,
+      "sha256": "ec6fcd256cb8329e53da17b5ad5cc5440524c957f3b0fe14aa3e9833c240b629",
+      "sha512": "fef4539459b6e5ec83d2b3950661fc60164d2c97852bb51e7206d80204602af2537bdee25c7e032abff01ea216933641b7093ec6394fefe55da6f23a5138078d"
     },
     {
       "archivo": "levantamiento-sip.html",
@@ -30,9 +30,9 @@
     {
       "archivo": "sw.js",
       "bytes": 1251,
-      "sha256": "bf5814cfc1e3e971ca258958a05b3fd4f703652a498d36476689aa66fefd8b67",
-      "sha512": "296b650de2a9bd8f6a81b38f9cbd735b55afe0f7b0e2d10f68e6955b6a9ce1298ea96f1be550e2c261fb1099e342d90b9d6aa7174793206a3777110533eff9ab"
+      "sha256": "7426a1e2d757b0c339d50692b62db62aa80b3b342e02db84412b932bfffe7e77",
+      "sha512": "919c8f0b7ba7306aff48f7c5682d70f0c5aaf1d93389dd2a774250cb3ab313c7968810e4bbe2e020df44080b949a48aa468769b8cf95ce4e6f2714f57b19b9c6"
     }
   ],
-  "hash_maestro_conjunto": "60ae83ef0ecc810f760093ee4f9b66604e8e315ede18ad2170b66f54bcaf8604"
+  "hash_maestro_conjunto": "1df03874c26c704710f4fd5080cd3cf7791630211c6e07283d29b8c93afc745c"
 }

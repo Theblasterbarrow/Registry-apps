@@ -144,6 +144,9 @@ textarea{min-height:70px;resize:vertical}
 .checkline span{font-size:.85rem;font-weight:700;color:#33445a}
 .checkline.on{background:#eef6f5;border-color:var(--teal-b)}
 .checkline.on span{color:var(--teal)}
+.pasrow{margin-top:8px;padding:12px;background:#eef6f5;border:1.5px solid var(--teal-b);
+  border-radius:8px}
+.pasrow label{margin-top:0;color:var(--teal)}
 
 .bottombar{position:fixed;bottom:0;left:0;right:0;background:#fff;
   border-top:1px solid var(--line);padding:10px 14px;display:flex;gap:8px;z-index:40;
@@ -845,6 +848,12 @@ function fillForm(c){
   setChip('f_tipo',c.tipo||'');
   document.getElementById('f_fecha').value=c.fecha||'';
   personas=JSON.parse(JSON.stringify(c.personal||[]));
+  personas.forEach(function(p){
+    if(p.pasante===undefined && p.finPasantia!==undefined){ p.pasante=!!p.finPasantia; }
+    delete p.finPasantia;
+    if(p.pasantiaMes===undefined) p.pasantiaMes='';
+    if(p.pasantiaAnio===undefined) p.pasantiaAnio='';
+  });
 }
 function collect(){
   return { id: currentId||uid(),
@@ -875,7 +884,7 @@ async function deleteCenter(){
 
 /* ============ personal (delegación de eventos) ============ */
 function addPerson(){
-  personas.push({nombre:'',telefono:'',correo:'',cargo:'',finPasantia:false});
+  personas.push({nombre:'',telefono:'',correo:'',cargo:'',pasante:false,pasantiaMes:'',pasantiaAnio:''});
   document.getElementById('personSearch').value='';
   renderPersons();
   setTimeout(function(){
@@ -884,6 +893,31 @@ function addPerson(){
   },60);
 }
 function attr(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function mesOpts(cur){
+  let out='<option value="">Mes</option>';
+  MESES.forEach(function(m,i){
+    const v=('0'+(i+1)).slice(-2);
+    out+='<option value="'+v+'"'+(cur===v?' selected':'')+'>'+m+'</option>';
+  });
+  return out;
+}
+function anioOpts(cur){
+  const y=new Date().getFullYear();
+  let out='<option value="">Año</option>';
+  for(let a=y-2;a<=y+4;a++){
+    out+='<option value="'+a+'"'+(String(cur)===String(a)?' selected':'')+'>'+a+'</option>';
+  }
+  if(cur && (cur<y-2 || cur>y+4)) out+='<option value="'+cur+'" selected>'+cur+'</option>';
+  return out;
+}
+function fmtPasantia(p){
+  if(!p || !p.pasante) return '';
+  if(p.pasantiaMes && p.pasantiaAnio) return p.pasantiaMes+'/'+p.pasantiaAnio;
+  return '';
+}
+
 function cargoOpts(cur){
   const lista=(DB.cargos&&DB.cargos.length)?DB.cargos.slice():CARGOS_DEF.slice();
   if(cur && lista.indexOf(cur)<0) lista.push(cur);   // conserva cargos ya registrados
@@ -933,10 +967,18 @@ function renderPersons(){
       '</div>'+
       '<label>Correo</label>'+
       '<input type="email" data-idx="'+idx+'" data-field="correo" value="'+attr(p.correo)+'">'+
-      '<label class="checkline '+(p.finPasantia?'on':'')+'">'+
-        '<input type="checkbox" data-idx="'+idx+'" data-field="finPasantia"'+(p.finPasantia?' checked':'')+'>'+
-        '<span>Finalización de pasantía</span>'+
+      '<label class="checkline '+(p.pasante?'on':'')+'">'+
+        '<input type="checkbox" data-idx="'+idx+'" data-field="pasante"'+(p.pasante?' checked':'')+'>'+
+        '<span>Médico Pasante</span>'+
       '</label>'+
+      (p.pasante?
+        '<div class="pasrow">'+
+          '<label>Fecha de finalización de pasantía</label>'+
+          '<div class="row2">'+
+            '<select data-idx="'+idx+'" data-field="pasantiaMes">'+mesOpts(p.pasantiaMes)+'</select>'+
+            '<select data-idx="'+idx+'" data-field="pasantiaAnio">'+anioOpts(p.pasantiaAnio)+'</select>'+
+          '</div>'+
+        '</div>' : '')+
     '</div>';
   }).join('') || '<div class="empty" style="padding:24px">Sin resultados para la búsqueda.</div>';
 }
@@ -948,18 +990,22 @@ document.getElementById('personList').addEventListener('input', function(e){
 document.getElementById('personList').addEventListener('change', function(e){
   const sel=e.target.closest('select[data-idx]');
   if(sel){
-    const i=parseInt(sel.dataset.idx);
-    if(sel.value==='__new'){ nuevoCargo(i); return; }
-    personas[i].cargo=sel.value;
-    renderPersons();
+    const i=parseInt(sel.dataset.idx), f=sel.dataset.field;
+    if(f==='cargo'){
+      if(sel.value==='__new'){ nuevoCargo(i); return; }
+      personas[i].cargo=sel.value;
+      renderPersons();
+      return;
+    }
+    personas[i][f]=sel.value;   // mes / año: sin re-render, conserva el desplegable abierto
     return;
   }
   const chk=e.target.closest('input[type=checkbox][data-idx]');
   if(chk){
     const i=parseInt(chk.dataset.idx);
     personas[i][chk.dataset.field]=chk.checked;
-    const line=chk.closest('.checkline');
-    if(line) line.classList.toggle('on', chk.checked);
+    if(!chk.checked){ personas[i].pasantiaMes=''; personas[i].pasantiaAnio=''; }
+    renderPersons();
   }
 });
 document.getElementById('personList').addEventListener('click', function(e){
@@ -983,14 +1029,14 @@ function exportXLSX(){
       rows.push({
         'Provincia':c.provincia||'','Municipio':c.municipio||'','Código SNS':c.codigo||'','Centro de Salud':c.nombre||'',
         'Dirección del Centro':c.direccion||'','Tipo':c.tipo||'','N':i+1,
-        'Nombre':p.nombre||'','Teléfono':p.telefono||'','Correo':p.correo||'','Cargo':p.cargo||'','Finalización de pasantía':p.finPasantia?'Sí':'',
+        'Nombre':p.nombre||'','Teléfono':p.telefono||'','Correo':p.correo||'','Cargo':p.cargo||'','Médico Pasante':p.pasante?'Sí':'','Fin. pasantía (MM/AAAA)':fmtPasantia(p),
         'Fecha levantamiento':c.fecha||''
       });
     });
   });
   const wsP=XLSX.utils.json_to_sheet(rows.length?rows:[{'Provincia':'—'}]);
   wsP['!cols']=[{wch:12},{wch:16},{wch:12},{wch:28},{wch:30},{wch:10},{wch:4},
-                {wch:28},{wch:14},{wch:26},{wch:22},{wch:20},{wch:14}];
+                {wch:28},{wch:14},{wch:26},{wch:22},{wch:14},{wch:20},{wch:14}];
   XLSX.utils.book_append_sheet(wb, wsP, 'Personal');
 
   const wsC=XLSX.utils.json_to_sheet(DB.centros.map(function(c){
@@ -1028,10 +1074,10 @@ function exportPDF(){
     const ps=c.personal||[];
     let tabla;
     if(ps.length){
-      tabla='<table class="pr"><tr><th>#</th><th>Nombre</th><th>Cargo</th><th>Fin. pasantía</th><th>Teléfono</th><th>Correo</th></tr>'+
+      tabla='<table class="pr"><tr><th>#</th><th>Nombre</th><th>Cargo</th><th>Pasante</th><th>Fin. pasantía</th><th>Teléfono</th><th>Correo</th></tr>'+
         ps.map(function(p,i){
           return '<tr><td>'+(i+1)+'</td><td>'+(esc(p.nombre)||'—')+'</td><td>'+(esc(p.cargo)||'—')+
-                 '</td><td>'+(p.finPasantia?'Sí':'—')+'</td><td>'+(esc(p.telefono)||'—')+'</td><td>'+(esc(p.correo)||'—')+'</td></tr>';
+                 '</td><td>'+(p.pasante?'Sí':'—')+'</td><td>'+(fmtPasantia(p)||'—')+'</td><td>'+(esc(p.telefono)||'—')+'</td><td>'+(esc(p.correo)||'—')+'</td></tr>';
         }).join('')+'</table>';
     } else {
       tabla='<p style="font-size:9pt">Sin personal registrado.</p>';
