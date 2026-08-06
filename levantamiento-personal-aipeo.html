@@ -138,6 +138,12 @@ textarea{min-height:70px;resize:vertical}
 .person-card h4{font-size:.85rem;font-weight:800;margin-bottom:8px;color:var(--teal);
   font-family:var(--mono);letter-spacing:.06em}
 .person-card.incomplete{border-left-color:var(--gold)}
+.checkline{display:flex;align-items:center;gap:9px;margin-top:12px;padding:10px 12px;
+  background:#FBFAF7;border:1.5px solid var(--line);border-radius:8px;cursor:pointer}
+.checkline input{width:20px;height:20px;margin:0;accent-color:var(--teal);flex:0 0 auto}
+.checkline span{font-size:.85rem;font-weight:700;color:#33445a}
+.checkline.on{background:#eef6f5;border-color:var(--teal-b)}
+.checkline.on span{color:var(--teal)}
 
 .bottombar{position:fixed;bottom:0;left:0;right:0;background:#fff;
   border-top:1px solid var(--line);padding:10px 14px;display:flex;gap:8px;z-index:40;
@@ -296,6 +302,22 @@ textarea{min-height:70px;resize:vertical}
 
 <main id="viewList">
   <button class="btn btn-primary btn-block" onclick="newCenter()" style="margin-bottom:16px">＋ Nuevo centro</button>
+  <div class="findbar">
+    <input type="text" id="cSearch" placeholder="🔎 Buscar centro, municipio o código..." autocomplete="off">
+    <div class="filterrow" id="fProv">
+      <button type="button" class="fchip prov on" data-v="">Todas</button>
+      <button type="button" class="fchip prov" data-v="Dajabón">Dajabón</button>
+      <button type="button" class="fchip prov" data-v="Elías Piña">Elías Piña</button>
+    </div>
+    <div class="filterrow" id="fTipo">
+      <button type="button" class="fchip tipo on" data-v="">Todo tipo</button>
+      <button type="button" class="fchip tipo" data-v="Hospital">Hospital</button>
+      <button type="button" class="fchip tipo" data-v="CPN">CPN</button>
+      <button type="button" class="fchip tipo" data-v="UNAP">UNAP</button>
+      <button type="button" class="fchip tipo" data-v="Otro">Otro</button>
+    </div>
+  </div>
+  <div class="findcount" id="cCount"></div>
   <div id="centerList"></div>
   <div style="display:flex;gap:8px;margin-top:18px">
     <button class="btn btn-teal btn-block" onclick="exportXLSX()">⬇ Excel</button>
@@ -351,16 +373,6 @@ textarea{min-height:70px;resize:vertical}
   <button class="btn btn-danger btn-sm" onclick="deleteCenter()">Eliminar</button>
   <button class="btn btn-primary" onclick="saveCenter(true)">Guardar centro</button>
 </div>
-
-<datalist id="cargos">
-  <option>Médico/a general</option><option>Médico/a pediatra</option>
-  <option>Médico/a ginecólogo/a</option><option>Enfermero/a</option>
-  <option>Auxiliar de enfermería</option><option>Promotor/a de salud</option>
-  <option>Supervisor/a de UNAP</option><option>Bioanalista</option>
-  <option>Odontólogo/a</option><option>Psicólogo/a</option>
-  <option>Nutricionista</option><option>Personal administrativo</option>
-  <option>Encargado/a de estadística</option><option>Director/a del centro</option>
-</datalist>
 
 <div id="modal">
   <div class="modal-box">
@@ -443,6 +455,8 @@ let masterKey=null, masterRawB64=null, currentUser=null;
 let DB={centros:[]};
 let currentId=null;
 let personas=[];
+const CARGOS_DEF=['Médico Pasante','Médico Asistente','Médico General','Médico Familiar',
+  'Médico Ginecólogo','Enfermera/o','Director'];
 
 /* ============ autenticación ============ */
 
@@ -556,7 +570,7 @@ async function doSetup(){
   const users={};
   users[u]={ pw: await wrapMasterFor(p), rc: await wrapMasterFor(rc) };
   await saveUsers(users);
-  DB={centros:[]};
+  DB={centros:[],cargos:CARGOS_DEF.slice()};
   await persist();
   currentUser=u;
   await store.set(K_LAST,u);
@@ -676,6 +690,7 @@ async function load(){
   if(raw&&masterKey){
     try{ DB=JSON.parse(await C.decRaw(masterKey,raw)); }catch(e){ DB={centros:[]}; }
   }
+  if(!DB.cargos || !DB.cargos.length) DB.cargos=CARGOS_DEF.slice();
 }
 async function persist(){
   if(!masterKey) return;
@@ -705,14 +720,72 @@ function setChip(id,val){
 }
 
 /* ============ lista de centros ============ */
+
+/* ===== Búsqueda y filtros (solo afectan la vista) ===== */
+const FL={q:'',prov:'',tipo:''};
+function norm(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
+function filtrarCentros(){
+  const q=norm(FL.q);
+  return DB.centros.filter(function(c){
+    if(FL.prov && c.provincia!==FL.prov) return false;
+    if(FL.tipo && (c.tipo||'')!==FL.tipo) return false;
+    if(!q) return true;
+    return norm(c.nombre).indexOf(q)>=0 ||
+           norm(c.municipio).indexOf(q)>=0 ||
+           norm(c.codigo).indexOf(q)>=0 ||
+           norm(c.provincia).indexOf(q)>=0;
+  });
+}
+function hayFiltro(){ return !!(FL.q||FL.prov||FL.tipo); }
+function limpiarFiltros(){
+  FL.q=''; FL.prov=''; FL.tipo='';
+  document.getElementById('cSearch').value='';
+  ['fProv','fTipo'].forEach(function(id){
+    const row=document.getElementById(id);
+    row.querySelectorAll('.fchip').forEach(function(b,i){ b.classList.toggle('on', i===0); });
+  });
+  renderList();
+}
+function pintarConteo(m,total){
+  const el=document.getElementById('cCount');
+  if(!el) return;
+  if(!total){ el.innerHTML=''; return; }
+  el.innerHTML = '<span>Mostrando '+m+' de '+total+'</span>'+
+    (hayFiltro()?'<button type="button" id="clearF">Limpiar filtros</button>':'');
+  const cb=document.getElementById('clearF');
+  if(cb) cb.onclick=limpiarFiltros;
+}
+document.getElementById('cSearch').addEventListener('input', function(e){
+  FL.q=e.target.value; renderList();
+});
+['fProv','fTipo'].forEach(function(id){
+  document.getElementById(id).addEventListener('click', function(e){
+    const b=e.target.closest('.fchip');
+    if(!b) return;
+    this.querySelectorAll('.fchip').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    if(id==='fProv') FL.prov=b.dataset.v; else FL.tipo=b.dataset.v;
+    renderList();
+  });
+});
+
 function renderList(){
   const list=document.getElementById('centerList');
   document.getElementById('countBadge').textContent=DB.centros.length;
   if(!DB.centros.length){
     list.innerHTML='<div class="empty"><div class="big">👥</div><b>Sin centros registrados</b><br>Toca "Nuevo centro" para iniciar.</div>';
+    pintarConteo(0,0);
     return;
   }
-  list.innerHTML=DB.centros.map(function(c){
+  const vis=filtrarCentros();
+  pintarConteo(vis.length, DB.centros.length);
+  if(!vis.length){
+    list.innerHTML='<div class="empty"><div class="big">🔎</div><b>Ningún centro coincide</b><br>Ajusta la búsqueda o los filtros.</div>';
+    return;
+  }
+  list.innerHTML=vis.map(function(c){
     const arr=c.personal||[];
     const n=arr.length;
     const comp=arr.filter(function(p){return p.nombre&&p.cargo;}).length;
@@ -802,7 +875,7 @@ async function deleteCenter(){
 
 /* ============ personal (delegación de eventos) ============ */
 function addPerson(){
-  personas.push({nombre:'',telefono:'',correo:'',cargo:''});
+  personas.push({nombre:'',telefono:'',correo:'',cargo:'',finPasantia:false});
   document.getElementById('personSearch').value='';
   renderPersons();
   setTimeout(function(){
@@ -811,6 +884,27 @@ function addPerson(){
   },60);
 }
 function attr(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function cargoOpts(cur){
+  const lista=(DB.cargos&&DB.cargos.length)?DB.cargos.slice():CARGOS_DEF.slice();
+  if(cur && lista.indexOf(cur)<0) lista.push(cur);   // conserva cargos ya registrados
+  let out='<option value="">— Seleccionar —</option>';
+  lista.forEach(function(t){
+    out+='<option value="'+attr(t)+'"'+(cur===t?' selected':'')+'>'+attr(t)+'</option>';
+  });
+  out+='<option value="__new">＋ Agregar nuevo cargo…</option>';
+  return out;
+}
+async function nuevoCargo(idx){
+  const n=prompt('Nombre del nuevo cargo:');
+  if(!n || !n.trim()){ renderPersons(); return; }
+  const name=n.trim();
+  if(!DB.cargos) DB.cargos=CARGOS_DEF.slice();
+  const existe=DB.cargos.filter(function(c){return c.toLowerCase()===name.toLowerCase();})[0];
+  if(existe){ personas[idx].cargo=existe; }
+  else { DB.cargos.push(name); personas[idx].cargo=name; await persist(); toast('✓ Cargo agregado'); }
+  renderPersons();
+}
+
 function renderPersons(){
   const q=(document.getElementById('personSearch').value||'').toLowerCase();
   const el=document.getElementById('personList');
@@ -835,17 +929,38 @@ function renderPersons(){
         '<div><label>Teléfono</label>'+
         '<input type="tel" data-idx="'+idx+'" data-field="telefono" value="'+attr(p.telefono)+'"></div>'+
         '<div><label>Cargo</label>'+
-        '<input type="text" list="cargos" data-idx="'+idx+'" data-field="cargo" value="'+attr(p.cargo)+'"></div>'+
+        '<select data-idx="'+idx+'" data-field="cargo">'+cargoOpts(p.cargo)+'</select></div>'+
       '</div>'+
       '<label>Correo</label>'+
       '<input type="email" data-idx="'+idx+'" data-field="correo" value="'+attr(p.correo)+'">'+
+      '<label class="checkline '+(p.finPasantia?'on':'')+'">'+
+        '<input type="checkbox" data-idx="'+idx+'" data-field="finPasantia"'+(p.finPasantia?' checked':'')+'>'+
+        '<span>Finalización de pasantía</span>'+
+      '</label>'+
     '</div>';
   }).join('') || '<div class="empty" style="padding:24px">Sin resultados para la búsqueda.</div>';
 }
 document.getElementById('personList').addEventListener('input', function(e){
   const inp=e.target.closest('input[data-idx]');
-  if(!inp) return;
+  if(!inp || inp.type==='checkbox') return;
   personas[parseInt(inp.dataset.idx)][inp.dataset.field]=inp.value;
+});
+document.getElementById('personList').addEventListener('change', function(e){
+  const sel=e.target.closest('select[data-idx]');
+  if(sel){
+    const i=parseInt(sel.dataset.idx);
+    if(sel.value==='__new'){ nuevoCargo(i); return; }
+    personas[i].cargo=sel.value;
+    renderPersons();
+    return;
+  }
+  const chk=e.target.closest('input[type=checkbox][data-idx]');
+  if(chk){
+    const i=parseInt(chk.dataset.idx);
+    personas[i][chk.dataset.field]=chk.checked;
+    const line=chk.closest('.checkline');
+    if(line) line.classList.toggle('on', chk.checked);
+  }
 });
 document.getElementById('personList').addEventListener('click', function(e){
   const b=e.target.closest('button[data-del]');
@@ -868,14 +983,14 @@ function exportXLSX(){
       rows.push({
         'Provincia':c.provincia||'','Municipio':c.municipio||'','Código SNS':c.codigo||'','Centro de Salud':c.nombre||'',
         'Dirección del Centro':c.direccion||'','Tipo':c.tipo||'','N':i+1,
-        'Nombre':p.nombre||'','Teléfono':p.telefono||'','Correo':p.correo||'','Cargo':p.cargo||'',
+        'Nombre':p.nombre||'','Teléfono':p.telefono||'','Correo':p.correo||'','Cargo':p.cargo||'','Finalización de pasantía':p.finPasantia?'Sí':'',
         'Fecha levantamiento':c.fecha||''
       });
     });
   });
   const wsP=XLSX.utils.json_to_sheet(rows.length?rows:[{'Provincia':'—'}]);
   wsP['!cols']=[{wch:12},{wch:16},{wch:12},{wch:28},{wch:30},{wch:10},{wch:4},
-                {wch:28},{wch:14},{wch:26},{wch:22},{wch:14}];
+                {wch:28},{wch:14},{wch:26},{wch:22},{wch:20},{wch:14}];
   XLSX.utils.book_append_sheet(wb, wsP, 'Personal');
 
   const wsC=XLSX.utils.json_to_sheet(DB.centros.map(function(c){
@@ -913,10 +1028,10 @@ function exportPDF(){
     const ps=c.personal||[];
     let tabla;
     if(ps.length){
-      tabla='<table class="pr"><tr><th>#</th><th>Nombre</th><th>Cargo</th><th>Teléfono</th><th>Correo</th></tr>'+
+      tabla='<table class="pr"><tr><th>#</th><th>Nombre</th><th>Cargo</th><th>Fin. pasantía</th><th>Teléfono</th><th>Correo</th></tr>'+
         ps.map(function(p,i){
           return '<tr><td>'+(i+1)+'</td><td>'+(esc(p.nombre)||'—')+'</td><td>'+(esc(p.cargo)||'—')+
-                 '</td><td>'+(esc(p.telefono)||'—')+'</td><td>'+(esc(p.correo)||'—')+'</td></tr>';
+                 '</td><td>'+(p.finPasantia?'Sí':'—')+'</td><td>'+(esc(p.telefono)||'—')+'</td><td>'+(esc(p.correo)||'—')+'</td></tr>';
         }).join('')+'</table>';
     } else {
       tabla='<p style="font-size:9pt">Sin personal registrado.</p>';

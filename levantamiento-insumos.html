@@ -140,6 +140,9 @@ textarea{min-height:70px;resize:vertical}
 .thumbwrap{position:relative;display:inline-block;margin:2px}
 .thumbwrap .fotodel{position:absolute;top:-8px;right:-8px;background:#fff;border-radius:50%;
   padding:0 6px;border:1px solid var(--line);font-size:.8rem;line-height:1.4}
+.thumbwrap .fotodl{position:absolute;bottom:-7px;right:-9px;background:#fff;
+  border:1px solid var(--line);border-radius:50%;padding:0 6px;font-size:.8rem;
+  line-height:1.5;cursor:pointer;color:var(--teal);font-weight:800}
 .mini{font-size:.68rem;font-weight:700;color:#33445a;margin:0 0 3px;display:block;text-transform:uppercase;letter-spacing:.04em}
 
 /* ---- insumos ---- */
@@ -327,6 +330,22 @@ textarea{min-height:70px;resize:vertical}
 
 <main id="viewList">
   <button class="btn btn-primary btn-block" onclick="newCenter()" style="margin-bottom:16px">＋ Nuevo centro</button>
+  <div class="findbar">
+    <input type="text" id="cSearch" placeholder="🔎 Buscar centro, municipio o código..." autocomplete="off">
+    <div class="filterrow" id="fProv">
+      <button type="button" class="fchip prov on" data-v="">Todas</button>
+      <button type="button" class="fchip prov" data-v="Dajabón">Dajabón</button>
+      <button type="button" class="fchip prov" data-v="Elías Piña">Elías Piña</button>
+    </div>
+    <div class="filterrow" id="fTipo">
+      <button type="button" class="fchip tipo on" data-v="">Todo tipo</button>
+      <button type="button" class="fchip tipo" data-v="Hospital">Hospital</button>
+      <button type="button" class="fchip tipo" data-v="CPN">CPN</button>
+      <button type="button" class="fchip tipo" data-v="UNAP">UNAP</button>
+      <button type="button" class="fchip tipo" data-v="Otro">Otro</button>
+    </div>
+  </div>
+  <div class="findcount" id="cCount"></div>
   <div id="centerList"></div>
   <div style="display:flex;gap:8px;margin-top:18px">
     <button class="btn btn-teal btn-block" onclick="exportXLSX()">⬇ Excel consolidado</button>
@@ -392,6 +411,7 @@ textarea{min-height:70px;resize:vertical}
       <div class="fotobar">
         <button type="button" class="btn btn-sm btn-ghost" id="nevFotoBtn">📷 Agregar foto</button>
         <img class="thumb" id="nevFotoImg" style="display:none">
+        <button type="button" class="btn btn-sm btn-ghost" id="nevFotoDl" style="display:none">⤓ Descargar</button>
         <button type="button" class="fotodel" id="nevFotoDel" style="display:none">✕</button>
       </div>
     </fieldset>
@@ -774,14 +794,72 @@ function setChip(id,val){
 }
 
 /* ============ lista de centros ============ */
+
+/* ===== Búsqueda y filtros (solo afectan la vista) ===== */
+const FL={q:'',prov:'',tipo:''};
+function norm(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
+function filtrarCentros(){
+  const q=norm(FL.q);
+  return DB.centros.filter(function(c){
+    if(FL.prov && c.provincia!==FL.prov) return false;
+    if(FL.tipo && (c.tipo||'')!==FL.tipo) return false;
+    if(!q) return true;
+    return norm(c.nombre).indexOf(q)>=0 ||
+           norm(c.municipio).indexOf(q)>=0 ||
+           norm(c.codigo).indexOf(q)>=0 ||
+           norm(c.provincia).indexOf(q)>=0;
+  });
+}
+function hayFiltro(){ return !!(FL.q||FL.prov||FL.tipo); }
+function limpiarFiltros(){
+  FL.q=''; FL.prov=''; FL.tipo='';
+  document.getElementById('cSearch').value='';
+  ['fProv','fTipo'].forEach(function(id){
+    const row=document.getElementById(id);
+    row.querySelectorAll('.fchip').forEach(function(b,i){ b.classList.toggle('on', i===0); });
+  });
+  renderList();
+}
+function pintarConteo(m,total){
+  const el=document.getElementById('cCount');
+  if(!el) return;
+  if(!total){ el.innerHTML=''; return; }
+  el.innerHTML = '<span>Mostrando '+m+' de '+total+'</span>'+
+    (hayFiltro()?'<button type="button" id="clearF">Limpiar filtros</button>':'');
+  const cb=document.getElementById('clearF');
+  if(cb) cb.onclick=limpiarFiltros;
+}
+document.getElementById('cSearch').addEventListener('input', function(e){
+  FL.q=e.target.value; renderList();
+});
+['fProv','fTipo'].forEach(function(id){
+  document.getElementById(id).addEventListener('click', function(e){
+    const b=e.target.closest('.fchip');
+    if(!b) return;
+    this.querySelectorAll('.fchip').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    if(id==='fProv') FL.prov=b.dataset.v; else FL.tipo=b.dataset.v;
+    renderList();
+  });
+});
+
 function renderList(){
   const list=document.getElementById('centerList');
   document.getElementById('countBadge').textContent=DB.centros.length;
   if(!DB.centros.length){
     list.innerHTML='<div class="empty"><div class="big">🏥</div><b>Sin centros registrados</b><br>Toca "Nuevo centro" para iniciar.</div>';
+    pintarConteo(0,0);
     return;
   }
-  list.innerHTML=DB.centros.map(c=>{
+  const vis=filtrarCentros();
+  pintarConteo(vis.length, DB.centros.length);
+  if(!vis.length){
+    list.innerHTML='<div class="empty"><div class="big">🔎</div><b>Ningún centro coincide</b><br>Ajusta la búsqueda o los filtros.</div>';
+    return;
+  }
+  list.innerHTML=vis.map(c=>{
     const d=c.det||{};
     const tot=Object.values(d).reduce((a,x)=>a+(parseInt(x.nec)||0),0);
     const n=Object.values(d).filter(x=>parseInt(x.nec)>0).length;
@@ -861,6 +939,51 @@ async function ensureCenterFotos(c){
 }
 async function ensureAllFotos(){ for(const c of DB.centros){ await ensureCenterFotos(c); } }
 
+
+/* ===== Descargar una foto al dispositivo ===== */
+function dataURLtoBlob(u){
+  const parts=String(u).split(',');
+  const m=parts[0].match(/:(.*?);/);
+  const mime=m?m[1]:'image/jpeg';
+  const bin=atob(parts[1]||'');
+  const arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return new Blob([arr],{type:mime});
+}
+function safeName(s){
+  return String(s||'foto').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,60) || 'foto';
+}
+async function downloadPhoto(fid, nombre){
+  const url = await loadPhoto(fid);
+  if(!url){ toast('No se pudo abrir la foto'); return; }
+  const fname = safeName(nombre)+'.jpg';
+  const blob = dataURLtoBlob(url);
+  // iPhone: hoja de compartir -> "Guardar en Fotos"
+  try{
+    if(navigator.canShare && window.File){
+      const file=new File([blob], fname, {type:'image/jpeg'});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:nombre||'Foto'});
+        return;
+      }
+    }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  // Resto de navegadores: descarga directa
+  try{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=fname;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500);
+    toast('✓ Foto descargada');
+  }catch(e){ toast('No se pudo descargar'); }
+}
+function centroActual(){
+  const el=document.getElementById('f_nombre');
+  return el ? (el.value.trim()||'Centro') : 'Centro';
+}
+
 function pickPhoto(cb){
   const inp=document.createElement('input');
   inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment');
@@ -887,13 +1010,19 @@ function updateNevFoto(){
   const img=document.getElementById('nevFotoImg'), del=document.getElementById('nevFotoDel'),
         btn=document.getElementById('nevFotoBtn');
   const url=nevFotoId?(fotoCache[nevFotoId]||''):'';
-  if(url){ img.src=url; img.style.display='block'; del.style.display='block'; btn.textContent='📷 Cambiar foto'; }
-  else{ img.style.display='none'; del.style.display='none'; btn.textContent='📷 Agregar foto'; }
+  const dlb=document.getElementById('nevFotoDl');
+  if(url){ img.src=url; img.style.display='block'; del.style.display='block';
+    if(dlb) dlb.style.display='inline-flex'; btn.textContent='📷 Cambiar foto'; }
+  else{ img.style.display='none'; del.style.display='none';
+    if(dlb) dlb.style.display='none'; btn.textContent='📷 Agregar foto'; }
 }
 document.getElementById('nevFotoBtn').addEventListener('click', ()=>pickPhoto(async u=>{
   if(nevFotoId) delPhoto(nevFotoId);
   nevFotoId=await savePhoto(u); updateNevFoto();
 }));
+document.getElementById('nevFotoDl').addEventListener('click', ()=>{
+  if(nevFotoId) downloadPhoto(nevFotoId, centroActual()+'_Nevera_codigo_donacion');
+});
 document.getElementById('nevFotoDel').addEventListener('click', ()=>{
   if(nevFotoId) delPhoto(nevFotoId);
   nevFotoId=''; updateNevFoto();
@@ -1014,7 +1143,7 @@ function renderItems(){
         </div>
         <div class="fotobar" style="flex-wrap:wrap">
           <button type="button" class="btn btn-sm btn-ghost" data-itfoto="${idx}">📷 Agregar foto</button>
-          ${(x.fotos||[]).map((fid,k)=>`<span class="thumbwrap"><img class="thumb" src="${fotoCache[fid]||''}"><button type="button" class="fotodel" data-itfotodel="${idx}" data-k="${k}">✕</button></span>`).join('')}
+          ${(x.fotos||[]).map((fid,k)=>`<span class="thumbwrap"><img class="thumb" src="${fotoCache[fid]||''}"><button type="button" class="fotodel" data-itfotodel="${idx}" data-k="${k}">✕</button><button type="button" class="fotodl" data-itdl="${fid}" data-nm="${it.replace(/[^A-Za-z0-9]+/g,'_')}_${k+1}">⤓</button></span>`).join('')}
         </div>
         <span class="mini" style="margin-top:8px">Nota</span>
         <input type="text" value="${(x.nota||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}"
@@ -1046,6 +1175,8 @@ document.getElementById('itemsList').addEventListener('click', e=>{
       gd(it).fotos.push(id);
       renderItems();
     }); return; }
+  const dl=e.target.closest('button[data-itdl]');
+  if(dl){ downloadPhoto(dl.dataset.itdl, centroActual()+'_'+dl.dataset.nm); return; }
   const bd=e.target.closest('button[data-itfotodel]');
   if(bd){ const it=DB.items[parseInt(bd.dataset.itfotodel)], k=parseInt(bd.dataset.k);
     const rem=gd(it).fotos.splice(k,1)[0];

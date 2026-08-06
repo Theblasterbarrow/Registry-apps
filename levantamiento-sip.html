@@ -200,6 +200,9 @@ textarea{min-height:70px;resize:vertical}
 .thumbwrap{position:relative;display:inline-block;margin:2px}
 .thumbwrap .fotodel{position:absolute;top:-8px;right:-8px;background:#fff;border-radius:50%;
   padding:0 6px;border:1px solid var(--line);font-size:.8rem;line-height:1.4}
+.thumbwrap .fotodl{position:absolute;bottom:-7px;right:-9px;background:#fff;
+  border:1px solid var(--line);border-radius:50%;padding:0 6px;font-size:.8rem;
+  line-height:1.5;cursor:pointer;color:var(--teal);font-weight:800}
 
 
 .copyright-note{font-family:var(--mono);font-size:9px;color:#8fa2b5;text-align:center;
@@ -207,6 +210,25 @@ textarea{min-height:70px;resize:vertical}
 .copyright-note b{color:#9fc3c9}
 .copyright-foot{font-family:var(--mono);font-size:9px;color:#8a95a3;text-align:center;
   margin-top:22px;padding-top:12px;border-top:1px solid var(--line);line-height:1.6}
+
+
+/* ---- búsqueda y filtros ---- */
+.findbar{margin-bottom:14px}
+.findbar input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;
+  font-family:var(--sans);font-size:16px;background:#fff;color:var(--ink)}
+.findbar input:focus{outline:2px solid var(--teal-b);border-color:var(--teal-b)}
+.filterrow{display:flex;gap:6px;overflow-x:auto;padding:10px 0 4px;-webkit-overflow-scrolling:touch}
+.filterrow::-webkit-scrollbar{display:none}
+.fchip{flex:0 0 auto;border:1.5px solid var(--line);border-radius:20px;padding:7px 14px;
+  font-size:.82rem;font-weight:700;background:#fff;color:var(--ink);cursor:pointer;
+  white-space:nowrap;user-select:none}
+.fchip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.fchip.on.prov{background:var(--teal);border-color:var(--teal)}
+.fchip.on.tipo{background:var(--clinic);border-color:var(--clinic)}
+.findcount{font-family:var(--mono);font-size:10px;color:#7a8593;margin:6px 0 12px;
+  display:flex;justify-content:space-between;align-items:center}
+.findcount button{background:none;border:none;color:var(--clinic);font-size:10px;
+  font-weight:700;text-decoration:underline;cursor:pointer;font-family:var(--mono)}
 
 /* ---- print (reporte PDF) ---- */
 #printArea{display:none}
@@ -330,6 +352,22 @@ textarea{min-height:70px;resize:vertical}
   <div style="display:flex;gap:8px;margin-bottom:16px">
     <button class="btn btn-primary btn-block" onclick="newCenter()">＋ Nuevo centro</button>
   </div>
+  <div class="findbar">
+    <input type="text" id="cSearch" placeholder="🔎 Buscar centro, municipio o código..." autocomplete="off">
+    <div class="filterrow" id="fProv">
+      <button type="button" class="fchip prov on" data-v="">Todas</button>
+      <button type="button" class="fchip prov" data-v="Dajabón">Dajabón</button>
+      <button type="button" class="fchip prov" data-v="Elías Piña">Elías Piña</button>
+    </div>
+    <div class="filterrow" id="fTipo">
+      <button type="button" class="fchip tipo on" data-v="">Todo tipo</button>
+      <button type="button" class="fchip tipo" data-v="Hospital">Hospital</button>
+      <button type="button" class="fchip tipo" data-v="CPN">CPN</button>
+      <button type="button" class="fchip tipo" data-v="UNAP">UNAP</button>
+      <button type="button" class="fchip tipo" data-v="Otro">Otro</button>
+    </div>
+  </div>
+  <div class="findcount" id="cCount"></div>
   <div id="centerList"></div>
   <div style="display:flex;gap:8px;margin-top:18px">
     <button class="btn btn-teal btn-block" onclick="exportXLSX()">⬇ Excel</button>
@@ -896,14 +934,72 @@ function coverage(c){
   ];
   return s;
 }
+
+/* ===== Búsqueda y filtros (solo afectan la vista) ===== */
+const FL={q:'',prov:'',tipo:''};
+function norm(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
+function filtrarCentros(){
+  const q=norm(FL.q);
+  return DB.centros.filter(function(c){
+    if(FL.prov && c.provincia!==FL.prov) return false;
+    if(FL.tipo && (c.tipo||'')!==FL.tipo) return false;
+    if(!q) return true;
+    return norm(c.nombre).indexOf(q)>=0 ||
+           norm(c.municipio).indexOf(q)>=0 ||
+           norm(c.codigo).indexOf(q)>=0 ||
+           norm(c.provincia).indexOf(q)>=0;
+  });
+}
+function hayFiltro(){ return !!(FL.q||FL.prov||FL.tipo); }
+function limpiarFiltros(){
+  FL.q=''; FL.prov=''; FL.tipo='';
+  document.getElementById('cSearch').value='';
+  ['fProv','fTipo'].forEach(function(id){
+    const row=document.getElementById(id);
+    row.querySelectorAll('.fchip').forEach(function(b,i){ b.classList.toggle('on', i===0); });
+  });
+  renderList();
+}
+function pintarConteo(m,total){
+  const el=document.getElementById('cCount');
+  if(!el) return;
+  if(!total){ el.innerHTML=''; return; }
+  el.innerHTML = '<span>Mostrando '+m+' de '+total+'</span>'+
+    (hayFiltro()?'<button type="button" id="clearF">Limpiar filtros</button>':'');
+  const cb=document.getElementById('clearF');
+  if(cb) cb.onclick=limpiarFiltros;
+}
+document.getElementById('cSearch').addEventListener('input', function(e){
+  FL.q=e.target.value; renderList();
+});
+['fProv','fTipo'].forEach(function(id){
+  document.getElementById(id).addEventListener('click', function(e){
+    const b=e.target.closest('.fchip');
+    if(!b) return;
+    this.querySelectorAll('.fchip').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    if(id==='fProv') FL.prov=b.dataset.v; else FL.tipo=b.dataset.v;
+    renderList();
+  });
+});
+
 function renderList(){
   const list = document.getElementById('centerList');
   document.getElementById('countBadge').textContent = DB.centros.length + (DB.centros.length===1?' centro':' centros');
   if(!DB.centros.length){
     list.innerHTML = '<div class="empty"><div class="big">📋</div><b>Sin centros registrados</b><br>Toca "Nuevo centro" para iniciar el levantamiento.</div>';
+    pintarConteo(0,0);
     return;
   }
-  list.innerHTML = DB.centros.map(c=>{
+  const vis = filtrarCentros();
+  pintarConteo(vis.length, DB.centros.length);
+  if(!vis.length){
+    list.innerHTML = '<div class="empty"><div class="big">🔎</div><b>Ningún centro coincide</b><br>Ajusta la búsqueda o los filtros.</div>';
+    return;
+  }
+  list.innerHTML = vis.map(c=>{
     const cov = coverage(c); const done = cov.filter(Boolean).length;
     return `<div class="center-card" onclick="openCenter('${c.id}')">
       <h3>${c.nombre||'(sin nombre)'}</h3>
@@ -951,13 +1047,15 @@ let redFotos=[];
 function renderRedFotos(){
   const bar=document.getElementById('redFotoBar');
   bar.innerHTML='<button type="button" class="btn btn-sm btn-ghost" id="redFotoAdd">📷 Agregar foto</button>'+
-    redFotos.map((fid,k)=>`<span class="thumbwrap"><img class="thumb" src="${fotoCache[fid]||''}"><button type="button" class="fotodel" data-redk="${k}">✕</button></span>`).join('');
+    redFotos.map((fid,k)=>`<span class="thumbwrap"><img class="thumb" src="${fotoCache[fid]||''}"><button type="button" class="fotodel" data-redk="${k}">✕</button><button type="button" class="fotodl" data-reddl="${fid}" data-nm="Red_${k+1}">⤓</button></span>`).join('');
 }
 document.getElementById('redFotoBar').addEventListener('click', e=>{
   if(e.target.closest('#redFotoAdd')){
     pickPhoto(async url=>{ const id=await savePhoto(url); redFotos.push(id); renderRedFotos(); });
     return;
   }
+  const dl=e.target.closest('button[data-reddl]');
+  if(dl){ downloadPhoto(dl.dataset.reddl, centroActual()+'_'+dl.dataset.nm); return; }
   const bd=e.target.closest('button[data-redk]');
   if(bd){ const rem=redFotos.splice(parseInt(bd.dataset.redk),1)[0]; if(rem) delPhoto(rem); renderRedFotos(); }
 });
@@ -1048,6 +1146,51 @@ function pickPhoto(cb){
   };
   inp.click();
 }
+
+/* ===== Descargar una foto al dispositivo ===== */
+function dataURLtoBlob(u){
+  const parts=String(u).split(',');
+  const m=parts[0].match(/:(.*?);/);
+  const mime=m?m[1]:'image/jpeg';
+  const bin=atob(parts[1]||'');
+  const arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return new Blob([arr],{type:mime});
+}
+function safeName(s){
+  return String(s||'foto').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,60) || 'foto';
+}
+async function downloadPhoto(fid, nombre){
+  const url = await loadPhoto(fid);
+  if(!url){ toast('No se pudo abrir la foto'); return; }
+  const fname = safeName(nombre)+'.jpg';
+  const blob = dataURLtoBlob(url);
+  // iPhone: hoja de compartir -> "Guardar en Fotos"
+  try{
+    if(navigator.canShare && window.File){
+      const file=new File([blob], fname, {type:'image/jpeg'});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:nombre||'Foto'});
+        return;
+      }
+    }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  // Resto de navegadores: descarga directa
+  try{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=fname;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500);
+    toast('✓ Foto descargada');
+  }catch(e){ toast('No se pudo descargar'); }
+}
+function centroActual(){
+  const el=document.getElementById('f_nombre');
+  return el ? (el.value.trim()||'Centro') : 'Centro';
+}
+
 function attrEsc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 function optList(arr, cur){
   return arr.map(t=>`<option ${cur===t?'selected':''}>${t}</option>`).join('');
@@ -1085,7 +1228,7 @@ function renderEquipos(){
     <label>Observación</label><input type="text" value="${attrEsc(e.obs)}" data-eq="${i}" data-f="obs">
     <div class="fotobar" style="flex-wrap:wrap">
       <button type="button" class="btn btn-sm btn-ghost" data-eqfoto="${i}">📷 Agregar foto</button>
-      ${(e.fotos||[]).map((fid,k)=>`<span class="thumbwrap"><img class="thumb" src="${fotoCache[fid]||''}"><button type="button" class="fotodel" data-eqfotodel="${i}" data-k="${k}">✕</button></span>`).join('')}
+      ${(e.fotos||[]).map((fid,k)=>`<span class="thumbwrap"><img class="thumb" src="${fotoCache[fid]||''}"><button type="button" class="fotodel" data-eqfotodel="${i}" data-k="${k}">✕</button><button type="button" class="fotodl" data-eqdl="${fid}" data-nm="Equipo${i+1}_${attrEsc(e.tipo||'')}_${k+1}">⤓</button></span>`).join('')}
     </div>
   </div>`).join('') || '<div class="empty" style="padding:26px"><b>Sin equipos registrados</b><br>Agrega cada equipo encontrado en el centro.</div>';
 }
@@ -1108,6 +1251,8 @@ document.getElementById('equiposList').addEventListener('click', e=>{
       equipos[i].fotos.push(id);
       renderEquipos();
     }); return; }
+  const dl=e.target.closest('button[data-eqdl]');
+  if(dl){ downloadPhoto(dl.dataset.eqdl, centroActual()+'_'+dl.dataset.nm); return; }
   const bd=e.target.closest('button[data-eqfotodel]');
   if(bd){ const i=parseInt(bd.dataset.eqfotodel), k=parseInt(bd.dataset.k);
     const rem=(equipos[i].fotos||[]).splice(k,1)[0];
