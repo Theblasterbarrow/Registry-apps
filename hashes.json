@@ -1,7 +1,7 @@
 {
-  "fecha_utc": "2026-08-06T02:05:09.783963+00:00",
+  "fecha_utc": "2026-08-06T15:34:50.243037+00:00",
   "autor": "Darien Gómez",
-  "version": "2.4 (Médico Pasante + fecha)",
+  "version": "3.0 (proteccion de datos, WiFi, galeria, export por centro)",
   "obras": [
     {
       "archivo": "index.html",
@@ -11,28 +11,28 @@
     },
     {
       "archivo": "levantamiento-insumos.html",
-      "bytes": 948311,
-      "sha256": "60171cbf3a36cbdf42b237c32cc6792b63cb786bcf760f3c2301a2ecb80440d7",
-      "sha512": "4cc2d1d626a82e719eefc71b804949e635fdfd5beb51ba2a9fcc793e5e0ff472ec7521b2e6a9dcaff05b497b189cd3de8a27a7cd8ec0195bc6135e057786a67e"
+      "bytes": 953298,
+      "sha256": "53553ff0a5afa4558f54edea846c9a21aa91b8af48d2429d1acccfce42e651de",
+      "sha512": "e8ae0cf77e05a5e6451c91fcfd1c262321f179d4664c1440590e32bd7e9f80001efe9355896d01bbe1ca4c328f47540a37905e242137537e55f2cc9fa83613f1"
     },
     {
       "archivo": "levantamiento-personal-aipeo.html",
-      "bytes": 938113,
-      "sha256": "ec6fcd256cb8329e53da17b5ad5cc5440524c957f3b0fe14aa3e9833c240b629",
-      "sha512": "fef4539459b6e5ec83d2b3950661fc60164d2c97852bb51e7206d80204602af2537bdee25c7e032abff01ea216933641b7093ec6394fefe55da6f23a5138078d"
+      "bytes": 942748,
+      "sha256": "308b605e462704c62f31f8058a689dc47895f2ff6cb21e137511a3c6f0e5bab4",
+      "sha512": "35740969c784b27ee00e7bd6c22342dcd01dbaf566d683a5ed88f5932696c5f211a5f4bf19ec3e2b3e3a6c78f6e473abc843e69cb370560b9caf21f5714f18b2"
     },
     {
       "archivo": "levantamiento-sip.html",
-      "bytes": 959994,
-      "sha256": "b14b2d5bce263e9be2ddbeb3f549d7517bddb2ebea462f3e683027daf9dee89c",
-      "sha512": "1396d21b0592abebbd6aa84bd3e0fd25b26ad90c4795217002a2462a37a149afc4cb620db70a167b2bae2a666a44dadb4a18f9713746697dac57a39d71535f93"
+      "bytes": 964401,
+      "sha256": "d2a757a482d677d662cc7c3eafd892a0e2c436e2919088f7582d37ffd62c9b19",
+      "sha512": "350acd1642f8032c15257304a2fe512bb6bbe111f0e29162f3c54bae321252dd85262ff7ba42b775904123b072de27926aea1b9d80ef1304e292ecbeb7655f11"
     },
     {
       "archivo": "sw.js",
       "bytes": 1251,
-      "sha256": "7426a1e2d757b0c339d50692b62db62aa80b3b342e02db84412b932bfffe7e77",
-      "sha512": "919c8f0b7ba7306aff48f7c5682d70f0c5aaf1d93389dd2a774250cb3ab313c7968810e4bbe2e020df44080b949a48aa468769b8cf95ce4e6f2714f57b19b9c6"
+      "sha256": "48a14521a6fa5e67c811471be322a35d5b4db2b3990bb0ffce88d720d7e296af",
+      "sha512": "65a2d871a7c3e14d1ff881f97217fc65fee9a191652b174bab8d390088b99df41bbf0b93e7387dd3c2bac444df6ed658349b6bf013055d2900d53ad7ea4c8e98"
     }
   ],
-  "hash_maestro_conjunto": "1df03874c26c704710f4fd5080cd3cf7791630211c6e07283d29b8c93afc745c"
+  "hash_maestro_conjunto": "5edf74201c92c51c6476c1ec225f9cdc47793ed8eb6407cf58a21820821ec6b9"
 }

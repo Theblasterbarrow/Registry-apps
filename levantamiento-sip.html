@@ -101,6 +101,11 @@ main{max-width:760px;margin:0 auto;padding:16px}
   padding:16px;margin-bottom:12px;cursor:pointer;position:relative}
 .center-card h3{font-size:1.05rem;font-weight:800;margin-bottom:2px}
 .center-card .meta{font-family:var(--mono);font-size:10.5px;color:var(--teal);letter-spacing:.04em}
+.cardacts{display:flex;gap:6px;margin-top:10px}
+.cardacts button{flex:0 0 auto;font-family:var(--mono);font-size:10px;font-weight:700;
+  padding:6px 11px;border-radius:6px;border:1.5px solid var(--line);background:#fff;
+  color:var(--teal);cursor:pointer;letter-spacing:.04em}
+.cardacts button:active{background:var(--teal);color:#fff}
 .coverage{display:flex;gap:5px;margin-top:10px}
 .coverage .seg{flex:1;height:6px;border-radius:3px;background:#E4DED2}
 .coverage .seg.done{background:var(--teal-b)}
@@ -534,6 +539,15 @@ textarea{min-height:70px;resize:vertical}
         <p style="font-size:.75rem;color:#556;margin-top:6px">Entrégaselo — no se volverá a mostrar.</p>
       </div>
     </fieldset>
+    <fieldset><legend>Respaldo de seguridad</legend>
+      <p style="font-size:.8rem;color:#556;margin-bottom:8px">
+        Guarda una copia cifrada de todo el levantamiento (centros y fotos) en un archivo.
+        Hazlo al terminar cada día: es la garantía contra pérdida de datos en el dispositivo.
+      </p>
+      <button class="btn btn-teal btn-sm btn-block" onclick="exportBackup()">⬇ Exportar respaldo</button>
+      <input type="file" id="bkFile" accept="application/json,.json" style="display:none">
+      <button class="btn btn-ghost btn-sm btn-block" style="margin-top:8px" onclick="document.getElementById('bkFile').click()">⬆ Restaurar desde respaldo</button>
+    </fieldset>
     <div id="userListBox" style="font-family:var(--mono);font-size:11px;color:#556;margin:8px 0"></div>
     <button class="btn btn-ghost btn-block btn-sm" onclick="closeSettings()">Cerrar</button>
   </div>
@@ -598,6 +612,8 @@ const CryptoBox = {
 };
 
 /* ================= cuentas de usuario ================= */
+let dataLocked=false;
+const K_BAK='sip-data-bak';
 const K_USERS='sip-users', K_SESS='sip-sess', K_LAST='sip-last', K_DATA='sip-data-enc';
 const K_OLD_SALT='sip-salt', K_OLD_CHECK='sip-check';
 let masterKey=null, masterRawB64=null, currentUser=null;
@@ -739,6 +755,11 @@ async function doSetup(){
     }catch(e){ msg.textContent='La clave anterior no es correcta. Corrígela o déjala vacía para empezar de cero.'; return; }
   }
 
+  const yaHayDatos = await store.get(K_DATA);
+  if(yaHayDatos && !confirm('Este dispositivo ya tiene datos guardados de otra cuenta. Crear una cuenta nueva los dejara INACCESIBLES. Continuar de todos modos?')){
+    msg.textContent='Operacion cancelada.';
+    return;
+  }
   const raw=crypto.getRandomValues(new Uint8Array(32));
   masterRawB64=CryptoBox.b64(raw);
   masterKey=await importMaster(masterRawB64);
@@ -804,7 +825,16 @@ async function doReset(){
   }
 }
 
+async function pedirPersistencia(){
+  try{
+    if(navigator.storage && navigator.storage.persist){
+      const ya = navigator.storage.persisted ? await navigator.storage.persisted() : false;
+      if(!ya) await navigator.storage.persist();
+    }
+  }catch(e){}
+}
 function enterApp(){
+  pedirPersistencia();
   document.getElementById('lockScreen').style.display='none';
   document.getElementById('hdrUser').textContent='👤 '+currentUser+' · DAJABÓN · ELÍAS PIÑA';
   ['li_user','li_pass','su_user','su_pass','su_conf','su_old','rs_user','rs_code','rs_pass','rs_conf']
@@ -866,18 +896,34 @@ async function addUser(){
 }
 
 async function load(){
+  dataLocked=false;
   const raw = await store.get(K_DATA);
   if(raw && masterKey){
-    try{ DB = JSON.parse(await CryptoBox.decrypt(masterKey, raw)); }catch(e){ DB = {centros:[]}; }
+    try{ DB = JSON.parse(await CryptoBox.decrypt(masterKey, raw)); }
+    catch(e){
+      let rec=null;
+      try{ const bak=await store.get(K_BAK); if(bak) rec=JSON.parse(await CryptoBox.decrypt(masterKey,bak)); }catch(e2){}
+      if(rec){ DB=rec; setTimeout(function(){ alert('Se recuperaron los datos desde el respaldo interno. Exporta un respaldo ahora mismo (engranaje - Respaldo).'); },500); }
+      else {
+        dataLocked=true;
+        DB={centros:[]};
+        setTimeout(function(){ alert('ATENCION: existen datos guardados que no se pudieron leer.\n\nEl guardado quedo BLOQUEADO para no sobrescribirlos. No captures nada todavia: cierra sesion y vuelve a entrar. Si el problema sigue, avisa antes de continuar.'); },500);
+      }
+    }
   }
   renderList();
 }
 async function persist(){
   if(!masterKey) return;
+  if(dataLocked){ toast('\u26a0 Guardado bloqueado: hay datos previos ilegibles'); return; }
   try{
-    await store.set(K_DATA, await CryptoBox.encrypt(masterKey, JSON.stringify(DB)));
+    const nuevo = await CryptoBox.encrypt(masterKey, JSON.stringify(DB));
+    const prev = await store.get(K_DATA);
+    if(prev){ try{ await store.set(K_BAK, prev); }catch(e){} }
+    await store.set(K_DATA, nuevo);
   }catch(e){
-    toast('⚠ No se pudo guardar: almacenamiento del navegador lleno');
+    toast('\u26a0 No se pudo guardar: almacenamiento lleno');
+    try{ alert('No se pudo guardar en este dispositivo. Exporta un respaldo (engranaje - Respaldo) antes de continuar.'); }catch(e2){}
   }
 }
 
@@ -912,7 +958,9 @@ function chipVal(id){
 }
 function setChip(id,val){
   const g = document.getElementById(id);
-  const vals = (val||'').split(', ');
+  // En grupos de selección única el valor va completo (puede contener comas).
+  // Solo en los de selección múltiple se separa por ', '.
+  const vals = g.hasAttribute('data-single') ? [(val||'')] : (val||'').split(', ');
   g.querySelectorAll('.chip-opt').forEach(c=>{
     c.classList.remove('sel','neg','mid');
     if(vals.includes(c.textContent.trim())){
@@ -985,6 +1033,21 @@ document.getElementById('cSearch').addEventListener('input', function(e){
   });
 });
 
+document.getElementById('centerList').addEventListener('click', function(e){
+  const bx=e.target.closest('button[data-xls]');
+  if(bx){ e.stopPropagation();
+    const c=DB.centros.find(x=>x.id===bx.dataset.xls);
+    if(c) exportXLSX([c]);
+    return; }
+  const bp=e.target.closest('button[data-pdf]');
+  if(bp){ e.stopPropagation();
+    const c=DB.centros.find(x=>x.id===bp.dataset.pdf);
+    if(c) exportPDF([c]);
+    return; }
+  const card=e.target.closest('[data-open]');
+  if(card) openCenter(card.dataset.open);
+});
+
 function renderList(){
   const list = document.getElementById('centerList');
   document.getElementById('countBadge').textContent = DB.centros.length + (DB.centros.length===1?' centro':' centros');
@@ -1001,11 +1064,15 @@ function renderList(){
   }
   list.innerHTML = vis.map(c=>{
     const cov = coverage(c); const done = cov.filter(Boolean).length;
-    return `<div class="center-card" onclick="openCenter('${c.id}')">
+    return `<div class="center-card" data-open="${c.id}">
       <h3>${c.nombre||'(sin nombre)'}</h3>
       <div class="meta">${c.tipo||'—'} · ${c.provincia||''} ${c.municipio? '· '+c.municipio:''} ${c.fecha? '· '+c.fecha:''}</div>
       <div class="coverage">${cov.map(d=>`<div class="seg ${d?'done':''}"></div>`).join('')}</div>
       <div class="coverage-label"><span>Centro·Equipos·Red·Personal·Necesid.</span><span>${done}/5</span></div>
+      <div class="cardacts">
+        <button type="button" data-xls="${c.id}">⬇ EXCEL</button>
+        <button type="button" data-pdf="${c.id}">⬇ PDF</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1046,12 +1113,17 @@ function showSec(n){
 let redFotos=[];
 function renderRedFotos(){
   const bar=document.getElementById('redFotoBar');
-  bar.innerHTML='<button type="button" class="btn btn-sm btn-ghost" id="redFotoAdd">📷 Agregar foto</button>'+
+  bar.innerHTML='<button type="button" class="btn btn-sm btn-ghost" id="redFotoAdd">📷 Cámara</button>'+
+    '<button type="button" class="btn btn-sm btn-ghost" id="redFotoGal">🖼 Galería</button>'+
     redFotos.map((fid,k)=>`<span class="thumbwrap"><img class="thumb" src="${fotoCache[fid]||''}"><button type="button" class="fotodel" data-redk="${k}">✕</button><button type="button" class="fotodl" data-reddl="${fid}" data-nm="Red_${k+1}">⤓</button></span>`).join('');
 }
 document.getElementById('redFotoBar').addEventListener('click', e=>{
   if(e.target.closest('#redFotoAdd')){
     pickPhoto(async url=>{ const id=await savePhoto(url); redFotos.push(id); renderRedFotos(); });
+    return;
+  }
+  if(e.target.closest('#redFotoGal')){
+    pickPhoto(async url=>{ const id=await savePhoto(url); redFotos.push(id); renderRedFotos(); }, true);
     return;
   }
   const dl=e.target.closest('button[data-reddl]');
@@ -1124,9 +1196,10 @@ async function ensureCenterFotos(c){
 }
 async function ensureAllFotos(){ for(const c of DB.centros){ await ensureCenterFotos(c); } }
 
-function pickPhoto(cb){
+function pickPhoto(cb, desdeGaleria){
   const inp=document.createElement('input');
-  inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment');
+  inp.type='file'; inp.accept='image/*';
+  if(!desdeGaleria) inp.setAttribute('capture','environment');
   inp.onchange=()=>{
     const f=inp.files && inp.files[0]; if(!f) return;
     const rd=new FileReader();
@@ -1227,7 +1300,8 @@ function renderEquipos(){
     <label>Uso destinado</label><input type="text" value="${attrEsc(e.uso)}" data-eq="${i}" data-f="uso" placeholder="SIP+, vacunas, administración...">
     <label>Observación</label><input type="text" value="${attrEsc(e.obs)}" data-eq="${i}" data-f="obs">
     <div class="fotobar" style="flex-wrap:wrap">
-      <button type="button" class="btn btn-sm btn-ghost" data-eqfoto="${i}">📷 Agregar foto</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-eqfoto="${i}">📷 Cámara</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-eqgal="${i}">🖼 Galería</button>
       ${(e.fotos||[]).map((fid,k)=>`<span class="thumbwrap"><img class="thumb" src="${fotoCache[fid]||''}"><button type="button" class="fotodel" data-eqfotodel="${i}" data-k="${k}">✕</button><button type="button" class="fotodl" data-eqdl="${fid}" data-nm="Equipo${i+1}_${attrEsc(e.tipo||'')}_${k+1}">⤓</button></span>`).join('')}
     </div>
   </div>`).join('') || '<div class="empty" style="padding:26px"><b>Sin equipos registrados</b><br>Agrega cada equipo encontrado en el centro.</div>';
@@ -1243,6 +1317,14 @@ document.getElementById('equiposList').addEventListener('change', e=>{
 document.getElementById('equiposList').addEventListener('click', e=>{
   const del=e.target.closest('button[data-eqdel]');
   if(del){ equipos.splice(parseInt(del.dataset.eqdel),1); renderEquipos(); return; }
+  const bg=e.target.closest('button[data-eqgal]');
+  if(bg){ const i=parseInt(bg.dataset.eqgal);
+    pickPhoto(async url=>{
+      const id=await savePhoto(url);
+      equipos[i].fotos=equipos[i].fotos||[];
+      equipos[i].fotos.push(id);
+      renderEquipos();
+    }, true); return; }
   const bf=e.target.closest('button[data-eqfoto]');
   if(bf){ const i=parseInt(bf.dataset.eqfoto);
     pickPhoto(async url=>{
@@ -1380,24 +1462,25 @@ async function deleteCenter(){
 }
 
 /* ================= export XLSX ================= */
-function exportXLSX(){
-  if(!DB.centros.length){ toast('No hay datos para exportar'); return; }
+function exportXLSX(lista){
+  const CEN = (lista && lista.length) ? lista : DB.centros;
+  if(!CEN.length){ toast('No hay datos para exportar'); return; }
   const wb = XLSX.utils.book_new();
   // Hoja Centros
-  const hC = DB.centros.map(c=>({
+  const hC = CEN.map(c=>({
     'Centro':c.nombre,'Código SNS':c.codigo,'Tipo':c.tipo,'Provincia':c.provincia,'Municipio':c.municipio,
     'Fecha visita':c.fecha,'Usa SIP+':c.usasip,'Contacto':c.contacto,'Cargo':c.cargo,'Teléfono':c.tel
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hC), 'Centros');
   // Hoja Equipos
   const hE = [];
-  DB.centros.forEach(c=>(c.equipos||[]).forEach((e,i)=>hE.push({
+  CEN.forEach(c=>(c.equipos||[]).forEach((e,i)=>hE.push({
     'Centro':c.nombre,'Código SNS':c.codigo,'Nº':i+1,'Tipo':e.tipo,'Marca/Modelo':e.marca,'Nº Serie':e.serie,'Procesador':e.cpu,
     'RAM':e.ram,'Disco':e.disco,'SO':e.so,'Estado':e.estado,'Apto SIP+':e.cumple,'Departamento':e.depto||'','Uso':e.uso,'Observación':e.obs,'Fotos':(e.fotos||[]).length||''
   })));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hE.length?hE:[{'Centro':'—'}]), 'Equipos');
   // Hoja Red
-  const hR = DB.centros.map(c=>{const r=c.red||{};return{
+  const hR = CEN.map(c=>{const r=c.red||{};return{
     'Centro':c.nombre,'Código SNS':c.codigo,'Internet':r.internet,'Proveedor':r.proveedor,'Velocidad (Mbps)':r.velocidad,
     'Tipo conexión':r.tipocon,'Estabilidad':r.estab,'Cableado estructurado':r.cableado,
     'Puntos de red':r.puntos,'Switch (puertos)':r.switch,'Router/Módem':r.router,
@@ -1405,7 +1488,7 @@ function exportXLSX(){
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hR), 'Red');
   // Hoja Personal
   const hP = [];
-  DB.centros.forEach(c=>{
+  CEN.forEach(c=>{
     const p=c.personal||{};
     hP.push({'Centro':c.nombre,'Código SNS':c.codigo,'Registro':'RESUMEN','Nombre':'','Cargo':'','Nivel informática':'',
       'Conoce SIP+':'','Capacitado':'', 'Total usuarios SIP+':p.total,'Capacitados':p.capacitados,'Observación':p.obs});
@@ -1414,21 +1497,24 @@ function exportXLSX(){
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hP), 'Personal');
   // Hoja Necesidades
-  const hN = DB.centros.map(c=>{const n=c.nec||{};return{
+  const hN = CEN.map(c=>{const n=c.nec||{};return{
     'Centro':c.nombre,'Código SNS':c.codigo,'Prioridad':n.prio,'PCs requeridas':n.pcs,'Impresoras':n.imp,'UPS':n.ups,
     'Otros equipos':n.otros,'Mejoras de red':n.red,'Observaciones':n.obs}});
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hN), 'Necesidades');
-  XLSX.writeFile(wb, 'Levantamiento_SIP_Dajabon_EliasPina.xlsx');
+  XLSX.writeFile(wb, (CEN.length===1
+    ? 'Levantamiento_SIP_'+String(CEN[0].nombre||'centro').replace(/[^A-Za-z0-9]+/g,'_')
+    : 'Levantamiento_SIP_Dajabon_EliasPina')+'.xlsx');
   toast('✓ Excel generado');
 }
 
 /* ================= export PDF (print) ================= */
 function esc(s){ return (s||'').toString().replace(/</g,'&lt;'); }
-async function exportPDF(){
-  if(!DB.centros.length){ toast('No hay datos para exportar'); return; }
-  await ensureAllFotos();
+async function exportPDF(lista){
+  const CEN = (lista && lista.length) ? lista : DB.centros;
+  if(!CEN.length){ toast('No hay datos para exportar'); return; }
+  for(const c of CEN){ await ensureCenterFotos(c); }
   const pa = document.getElementById('printArea');
-  pa.innerHTML = DB.centros.map(c=>{
+  pa.innerHTML = CEN.map(c=>{
     const r=c.red||{}, p=c.personal||{}, n=c.nec||{};
     return `<div class="pr-page">
       <div class="pr-head">

@@ -454,6 +454,15 @@ textarea{min-height:70px;resize:vertical}
         <p style="font-size:.75rem;color:#556;margin-top:6px">Entrégaselo — no se volverá a mostrar.</p>
       </div>
     </fieldset>
+    <fieldset><legend>Respaldo de seguridad</legend>
+      <p style="font-size:.8rem;color:#556;margin-bottom:8px">
+        Guarda una copia cifrada de todo el levantamiento (centros y fotos) en un archivo.
+        Hazlo al terminar cada día: es la garantía contra pérdida de datos en el dispositivo.
+      </p>
+      <button class="btn btn-teal btn-sm btn-block" onclick="exportBackup()">⬇ Exportar respaldo</button>
+      <input type="file" id="bkFile" accept="application/json,.json" style="display:none">
+      <button class="btn btn-ghost btn-sm btn-block" style="margin-top:8px" onclick="document.getElementById('bkFile').click()">⬆ Restaurar desde respaldo</button>
+    </fieldset>
     <div id="userListBox" style="font-family:var(--mono);font-size:11px;color:#556;margin:8px 0"></div>
     <button class="btn btn-ghost btn-block btn-sm" onclick="closeSettings()">Cerrar</button>
   </div>
@@ -511,6 +520,8 @@ const C = {
   }
 };
 
+let dataLocked=false;
+const K_BAK='ins-data-bak';
 const K_USERS='ins-users', K_SESS='ins-sess', K_LAST='ins-last', K_DATA='ins-data';
 let masterKey=null, masterRawB64=null, currentUser=null;
 let DB={centros:[],items:[]};
@@ -626,6 +637,11 @@ async function doSetup(){
   if(p.length<6){msg.textContent='La contraseña debe tener al menos 6 caracteres.';return;}
   if(p!==c){msg.textContent='Las contraseñas no coinciden.';return;}
   // llave maestra nueva
+  const yaHayDatos = await store.get(K_DATA);
+  if(yaHayDatos && !confirm('Este dispositivo ya tiene datos guardados de otra cuenta. Crear una cuenta nueva los dejara INACCESIBLES. Continuar de todos modos?')){
+    msg.textContent='Operacion cancelada.';
+    return;
+  }
   const raw=crypto.getRandomValues(new Uint8Array(32));
   masterRawB64=C.b64(raw);
   masterKey=await C.importMaster(masterRawB64);
@@ -690,7 +706,16 @@ async function doReset(){
   }
 }
 
+async function pedirPersistencia(){
+  try{
+    if(navigator.storage && navigator.storage.persist){
+      const ya = navigator.storage.persisted ? await navigator.storage.persisted() : false;
+      if(!ya) await navigator.storage.persist();
+    }
+  }catch(e){}
+}
 function enterApp(){
+  pedirPersistencia();
   document.getElementById('authScreen').style.display='none';
   document.getElementById('hdrUser').textContent='👤 '+currentUser+' · OPS-KOICA 2026';
   ['li_user','li_pass','su_user','su_pass','su_conf','rs_user','rs_code','rs_pass','rs_conf']
@@ -750,20 +775,100 @@ async function addUser(){
   toast('✓ Usuario creado');
 }
 
+
+/* ===== Respaldo de seguridad (archivo cifrado) ===== */
+function idsDeFotos(){
+  const ids=[];
+  (DB.centros||[]).forEach(function(c){
+    const d=c.det||{};
+    Object.keys(d).forEach(function(k){ ((d[k]&&d[k].fotos)||[]).forEach(function(id){ ids.push(id); }); });
+    if(c.nevera && c.nevera.fotoId) ids.push(c.nevera.fotoId);
+  });
+  return ids;
+}
+async function exportBackup(){
+  try{
+    const fotos={};
+    const ids=idsDeFotos();
+    for(const id of ids){
+      let enc=null;
+      try{ enc=await FotoDB.get(id); }catch(e){}
+      if(!enc) enc=await store.get('foto:'+id);
+      if(enc) fotos[id]=enc;
+    }
+    const bk={
+      app:'ins', formato:1, fecha:new Date().toISOString(),
+      users: await store.get(K_USERS),
+      data:  await store.get(K_DATA),
+      fotos: fotos
+    };
+    const txt=JSON.stringify(bk);
+    const blob=new Blob([txt],{type:'application/json'});
+    const nombre='respaldo-ins-'+new Date().toISOString().slice(0,10)+'.json';
+    try{
+      if(navigator.canShare && window.File){
+        const file=new File([blob], nombre, {type:'application/json'});
+        if(navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:'Respaldo Insumos'}); toast('\u2713 Respaldo generado'); return; }
+      }
+    }catch(e){ if(e && e.name==='AbortError') return; }
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=nombre;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500);
+    toast('\u2713 Respaldo generado ('+ids.length+' fotos)');
+  }catch(e){ toast('\u26a0 No se pudo generar el respaldo'); }
+}
+document.getElementById('bkFile').addEventListener('change', async function(ev){
+  const f=ev.target.files && ev.target.files[0];
+  ev.target.value='';
+  if(!f) return;
+  if(!confirm('Restaurar reemplazara los datos y usuarios de este dispositivo por los del archivo. Continuar?')) return;
+  try{
+    const txt=await f.text();
+    const bk=JSON.parse(txt);
+    if(!bk || bk.app!=='ins' || !bk.data){ alert('El archivo no es un respaldo valido de esta aplicacion.'); return; }
+    if(bk.users) await store.set(K_USERS, bk.users);
+    await store.set(K_DATA, bk.data);
+    const fotos=bk.fotos||{};
+    for(const id of Object.keys(fotos)){
+      try{ await FotoDB.put(id, bk.fotos[id]); }
+      catch(e){ await store.set('foto:'+id, bk.fotos[id]); }
+    }
+    alert('Respaldo restaurado. La aplicacion se recargara; inicia sesion con la contrasena que usabas cuando se creo el respaldo.');
+    location.reload();
+  }catch(e){ alert('No se pudo restaurar: '+(e && e.message ? e.message : 'archivo invalido')); }
+});
+
 /* ============ datos ============ */
 async function load(){
+  dataLocked=false;
   const raw=await store.get(K_DATA);
   if(raw&&masterKey){
-    try{ DB=JSON.parse(await C.decRaw(masterKey,raw)); }catch(e){ DB={centros:[],items:[...DEFAULT_ITEMS]}; }
+    try{ DB=JSON.parse(await C.decRaw(masterKey,raw)); }
+    catch(e){
+      let rec=null;
+      try{ const bak=await store.get(K_BAK); if(bak) rec=JSON.parse(await C.decRaw(masterKey,bak)); }catch(e2){}
+      if(rec){ DB=rec; setTimeout(function(){ alert('Se recuperaron los datos desde el respaldo interno. Exporta un respaldo ahora mismo (engranaje - Respaldo).'); },500); }
+      else {
+        dataLocked=true;
+        DB={centros:[],items:[...DEFAULT_ITEMS]};
+        setTimeout(function(){ alert('ATENCION: existen datos guardados que no se pudieron leer.\n\nEl guardado quedo BLOQUEADO para no sobrescribirlos. No captures nada todavia: cierra sesion y vuelve a entrar. Si el problema sigue, avisa antes de continuar.'); },500);
+      }
+    }
   }
   if(!DB.items||!DB.items.length) DB.items=[...DEFAULT_ITEMS];
 }
 async function persist(){
   if(!masterKey) return;
+  if(dataLocked){ toast('\u26a0 Guardado bloqueado: hay datos previos ilegibles'); return; }
   try{
-    await store.set(K_DATA, await C.encRaw(masterKey, JSON.stringify(DB)));
+    const nuevo = await C.encRaw(masterKey, JSON.stringify(DB));
+    const prev = await store.get(K_DATA);
+    if(prev){ try{ await store.set(K_BAK, prev); }catch(e){} }
+    await store.set(K_DATA, nuevo);
   }catch(e){
-    toast('⚠ No se pudo guardar: almacenamiento del navegador lleno');
+    toast('\u26a0 No se pudo guardar: almacenamiento lleno');
+    try{ alert('No se pudo guardar en este dispositivo. Exporta un respaldo (engranaje - Respaldo) antes de continuar.'); }catch(e2){}
   }
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;
