@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico · Levantamientos</title>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;background:#12233A;color:#F5F1EA;
+  padding:18px;line-height:1.5;margin:0}
+h1{font-size:1.15rem;margin:0 0 14px}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
+  border-radius:10px;padding:14px;margin-bottom:12px}
+.card h2{font-size:.95rem;margin:0 0 8px;color:#7ED3B2}
+pre{font-family:ui-monospace,Menlo,monospace;font-size:11px;white-space:pre-wrap;
+  word-break:break-all;margin:0;color:#c2cdd8}
+.ok{color:#7ED3B2;font-weight:700}
+.bad{color:#ff9b9b;font-weight:700}
+button{width:100%;padding:13px;border-radius:8px;border:none;font-weight:700;
+  font-size:.95rem;margin-top:8px;cursor:pointer}
+.b1{background:#2A9D8F;color:#fff}
+.b2{background:transparent;color:#ff9b9b;border:1.5px solid #ff9b9b}
+</style>
+</head>
+<body>
+<h1>🔧 Diagnóstico de las aplicaciones</h1>
+
+<div class="card">
+  <h2>1. Entorno del navegador</h2>
+  <pre id="env">…</pre>
+</div>
+
+<div class="card">
+  <h2>2. Cuentas guardadas en este dispositivo</h2>
+  <pre id="users">…</pre>
+</div>
+
+<div class="card">
+  <h2>3. Datos y sesiones</h2>
+  <pre id="datos">…</pre>
+</div>
+
+<div class="card">
+  <h2>4. Acciones</h2>
+  <button class="b1" onclick="limpiarSesiones()">Limpiar solo las sesiones guardadas</button>
+  <pre id="msg" style="margin-top:10px"></pre>
+</div>
+
+<div class="card">
+  <h2>5. Reinicio total (último recurso)</h2>
+  <pre>Borra cuentas y datos de TODAS las apps en este dispositivo.
+Úsalo solo si no hay datos que rescatar.</pre>
+  <button class="b2" onclick="borrarTodo()">Borrar todo y empezar de cero</button>
+</div>
+
+<script>
+const PREFS=['sip','ins','aipeo','dom'];
+const NOMBRES={sip:'Levantamiento SIP+',ins:'Insumos',aipeo:'Personal AIPEO',dom:'Usuarios de Dominio'};
+
+function env(){
+  let stor=false, err='';
+  try{ localStorage.setItem('__p__','1'); localStorage.removeItem('__p__'); stor=true; }
+  catch(e){ err=e.name+': '+e.message; }
+  const l=[];
+  l.push('URL:        '+location.href);
+  l.push('Protocolo:  '+location.protocol+(location.protocol==='https:'?'  ✓':'  ✗ (debe ser https)'));
+  l.push('Seguro:     '+(window.isSecureContext?'sí ✓':'NO ✗'));
+  l.push('Cifrado:    '+((window.crypto&&crypto.subtle)?'sí ✓':'NO ✗'));
+  l.push('localStorage: '+(stor?'sí ✓':'NO ✗ '+err));
+  l.push('IndexedDB:  '+(window.indexedDB?'sí ✓':'NO ✗'));
+  l.push('Modo privado: '+(stor?'no':'POSIBLE ✗'));
+  document.getElementById('env').textContent=l.join('\n');
+}
+
+function users(){
+  const l=[];
+  PREFS.forEach(function(p){
+    const raw=localStorage.getItem(p+'-users');
+    if(!raw){ l.push(NOMBRES[p]+': sin cuentas (debe pedir REGISTRO)'); return; }
+    try{
+      const o=JSON.parse(raw);
+      const ks=Object.keys(o);
+      l.push(NOMBRES[p]+': '+ks.length+' cuenta(s) -> '+ks.join(', '));
+      ks.forEach(function(u){
+        const e=o[u];
+        const ok=e&&e.pw&&e.pw.salt&&e.pw.wrap;
+        l.push('   · '+u+(ok?'  [estructura correcta]':'  [DAÑADA ✗]'));
+      });
+    }catch(e){ l.push(NOMBRES[p]+': registro DAÑADO ✗ ('+e.message+')'); }
+  });
+  document.getElementById('users').textContent=l.join('\n');
+}
+
+function datos(){
+  const l=[];
+  PREFS.forEach(function(p){
+    const d=localStorage.getItem(p+'-data');
+    const b=localStorage.getItem(p+'-data-bak');
+    const s=localStorage.getItem(p+'-sess');
+    const last=localStorage.getItem(p+'-last');
+    l.push(NOMBRES[p]+':');
+    l.push('   datos:    '+(d?(d.length+' bytes'):'—'));
+    l.push('   respaldo: '+(b?(b.length+' bytes'):'—'));
+    l.push('   sesión:   '+(s?'SÍ':'—')+'   último usuario: '+(last||'—'));
+  });
+  let tot=0;
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    tot+=(k.length+(localStorage.getItem(k)||'').length);
+  }
+  l.push('');
+  l.push('Espacio usado en localStorage: '+Math.round(tot/1024)+' KB');
+  l.push('Total de claves: '+localStorage.length);
+  document.getElementById('datos').textContent=l.join('\n');
+}
+
+function limpiarSesiones(){
+  let n=0;
+  PREFS.forEach(function(p){
+    if(localStorage.getItem(p+'-sess')){ localStorage.removeItem(p+'-sess'); n++; }
+  });
+  document.getElementById('msg').innerHTML='<span class="ok">Sesiones eliminadas: '+n+
+    '. Vuelve a abrir la aplicación.</span>';
+  datos();
+}
+
+function borrarTodo(){
+  if(!confirm('Esto borra TODAS las cuentas y datos de las 4 aplicaciones en este dispositivo. ¿Continuar?')) return;
+  if(!confirm('Confirmación final: la acción NO se puede deshacer.')) return;
+  PREFS.forEach(function(p){
+    ['-users','-data','-data-bak','-sess','-last'].forEach(function(sfx){
+      localStorage.removeItem(p+sfx);
+    });
+  });
+  Object.keys(localStorage).forEach(function(k){ if(k.indexOf('foto:')===0) localStorage.removeItem(k); });
+  try{ ['fotos-sip','fotos-insumos'].forEach(function(db){ indexedDB.deleteDatabase(db); }); }catch(e){}
+  document.getElementById('msg').innerHTML='<span class="ok">Todo borrado. Abre la app: debe pedir crear cuenta.</span>';
+  users(); datos();
+}
+
+env(); users(); datos();
+</script>
+</body>
+</html>

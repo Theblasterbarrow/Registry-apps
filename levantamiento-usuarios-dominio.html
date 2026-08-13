@@ -267,7 +267,10 @@ textarea{min-height:70px;resize:vertical}
       </label>
       <div class="msg" id="li_msg"></div>
       <button class="btn btn-teal btn-block" onclick="doLogin()">Iniciar sesión</button>
-      <div class="links"><button onclick="showAuth('reset')">Olvidé mi contraseña</button></div>
+      <div class="links">
+        <button onclick="showAuth('reset')">Olvidé mi contraseña</button>
+        <button onclick="reiniciarCuentas()">Problemas para entrar — reiniciar esta aplicación</button>
+      </div>
     </div>
 
     <div id="authSetup" style="display:none">
@@ -535,6 +538,23 @@ function showEnvWarn(r){
   }
 }
 
+async function reiniciarCuentas(){
+  let info='';
+  try{
+    const u=await store.get(K_USERS);
+    const d=await store.get(K_DATA);
+    info='Cuentas: '+(u?Object.keys(JSON.parse(u)).join(', '):'ninguna')+
+         '\nDatos guardados: '+(d?'SI ('+d.length+' bytes)':'no');
+  }catch(e){ info='No se pudo leer el estado.'; }
+  if(!confirm('Estado de esta aplicacion en el dispositivo:\n\n'+info+
+     '\n\nReiniciar borra las cuentas Y los datos de ESTA aplicacion. Continuar?')) return;
+  if(!confirm('Confirmacion final: esta accion no se puede deshacer.')) return;
+  await store.del(K_USERS); await store.del(K_DATA);
+  await store.del(K_BAK); await store.del(K_SESS); await store.del(K_LAST);
+  alert('Aplicacion reiniciada. Se recargara para crear una cuenta nueva.');
+  location.reload();
+}
+
 function showAuth(which){
   ['authLogin','authSetup','authRC','authReset'].forEach(function(id){
     document.getElementById(id).style.display='none';
@@ -607,6 +627,7 @@ async function doSetup(){
     msg.textContent='Operacion cancelada.';
     return;
   }
+  dataLocked=false;   // cuenta nueva: el guardado debe estar habilitado
   const raw=crypto.getRandomValues(new Uint8Array(32));
   masterRawB64=C.b64(raw);
   masterKey=await C.importMaster(masterRawB64);
@@ -641,7 +662,10 @@ async function doLogin(){
     await load();
     enterApp();
   }catch(e){
-    msg.textContent='Contraseña incorrecta.';
+    const det=(e && e.message)? (' ['+e.message+']') : '';
+    msg.textContent = (e && (e.name==='OperationError'||e.name==='InvalidAccessError'))
+      ? 'Contraseña incorrecta.'
+      : ('No se pudo iniciar sesión'+det);
     document.getElementById('li_pass').value='';
   }
 }
