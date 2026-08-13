@@ -1,5 +1,5 @@
 /* Service Worker - Levantamientos OPS/KOICA - v2 */
-const CACHE="lev-v8";
+const CACHE="lev-v9";
 const ASSETS=[
   './',
   './index.html',

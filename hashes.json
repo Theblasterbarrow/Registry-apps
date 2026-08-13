@@ -1,7 +1,7 @@
 {
-  "fecha_utc": "2026-08-13T14:11:16.902307+00:00",
+  "fecha_utc": "2026-08-13T14:27:21.248372+00:00",
   "autor": "Darien Gómez",
-  "version": "3.1 (4 apps: + usuarios de dominio)",
+  "version": "3.2 (salvaguarda de sesion, subtitulo dominio)",
   "obras": [
     {
       "archivo": "index.html",
@@ -11,34 +11,34 @@
     },
     {
       "archivo": "levantamiento-insumos.html",
-      "bytes": 955169,
-      "sha256": "13b6d20b099afe908f50ee1b3407be827009408af8d0befb666d0f35deef4f5a",
-      "sha512": "cb8e278b8202c6e9506de8eaf0c64c325c628c5d70cc08961d6a6bcd44458dfff4f9993eb4fb10c596176123059c4a4c8fe912811cb0c4444bed7189a9048e8c"
+      "bytes": 955378,
+      "sha256": "b248490411c8709a5ae9774bbf560a42e409ce25e7f23801ea6323834a125c79",
+      "sha512": "121107f5a8f11a2bda8f6fa71ac5d1873dcc398a07bb8c0e639ddc5bd8ca54b4a72418e44a5b8b35e2eecc2a252710f3903dc26b55d65269de4e632c67493e2a"
     },
     {
       "archivo": "levantamiento-personal-aipeo.html",
-      "bytes": 942748,
-      "sha256": "308b605e462704c62f31f8058a689dc47895f2ff6cb21e137511a3c6f0e5bab4",
-      "sha512": "35740969c784b27ee00e7bd6c22342dcd01dbaf566d683a5ed88f5932696c5f211a5f4bf19ec3e2b3e3a6c78f6e473abc843e69cb370560b9caf21f5714f18b2"
+      "bytes": 942957,
+      "sha256": "5ddd075524a45618d0d0b81901c3511e420155992bc5d4e92cf4adeed9f207a3",
+      "sha512": "767e8e41b36a0f39fcfddff6ceb18e32b14ff8f2929c3bd9ab70adb0b0d2cfc4696f16035d73493b801946bc2da71ddb9660044caec5a966ac5d5621cd541e83"
     },
     {
       "archivo": "levantamiento-sip.html",
-      "bytes": 964401,
-      "sha256": "d2a757a482d677d662cc7c3eafd892a0e2c436e2919088f7582d37ffd62c9b19",
-      "sha512": "350acd1642f8032c15257304a2fe512bb6bbe111f0e29162f3c54bae321252dd85262ff7ba42b775904123b072de27926aea1b9d80ef1304e292ecbeb7655f11"
+      "bytes": 964610,
+      "sha256": "43b42f7c85ce91d396f7c60b4fe100d3ba49a9a235f4b79a4efae7f589a81bde",
+      "sha512": "1dfaa6ae248c94d56c9a2c95ce1fc343e0e0dfd4fd90ad8ece7e3d61a17c805785e10e21fc07ffb21576d7db47f3ad6d18d019c0448d56e847c1df01b05f25e3"
     },
     {
       "archivo": "levantamiento-usuarios-dominio.html",
-      "bytes": 942333,
-      "sha256": "220400fef37ba72125cbbed05f291b179746bb5a702db57deff9e555c09e13d0",
-      "sha512": "f0dfb07886c1740485a13e39cd576061d11eb70674e3a75f008b6b38a1f5562702d375c2f5dae125c9b824fad886ed7711296f0f1b9551956f63538f629c2d31"
+      "bytes": 942650,
+      "sha256": "721dd5927b282e6f7b49b70db0f4d96b5e24db6f04a456034763f01cd5d78e6d",
+      "sha512": "67688fd06f1bdcdecc0808610019c60ac2317444aed1eccd40bae70edd4296de9544405716eccc7b23072043ae6382bd6687a284494ea3c314ad1e17bb8ccd3c"
     },
     {
       "archivo": "sw.js",
       "bytes": 1330,
-      "sha256": "a91f064c265715230dd6ca349f19e9c00eb7989f8ba04f01ee331835f1149eab",
-      "sha512": "b4b6b4cbf042b33a5bf49e85e0b6a0ebd8194c3cba22ead202f699c89513be370f01eb6755ba312c005d6f5af71acdbb723e9bdac2702932a24b16b5faed6ed4"
+      "sha256": "af08e8e4c7bd3361884bb90c1eeb0cfd5190914e94835cfb609b503384ad1604",
+      "sha512": "d1251deff0c9bcf27e0ae9a4824a7a5097162ca00699a403ef23ea507b5014e7d62422fefcda24f91e0258b915bb19b97e9b366df73bede98e5bcd470a5acdfc"
     }
   ],
-  "hash_maestro_conjunto": "d1fe9fb3cefabeeb58b152d4a3a9c20bc1af8cef88d13a88c3fb0c2418c19f05"
+  "hash_maestro_conjunto": "d6af3d21deb1495cb9c97168c88b4f5a56d60b3669c72328f3c9cd7843debe5e"
 }

@@ -538,12 +538,18 @@ async function initAuth(){
     const s=await store.get(K_SESS);
     if(s){
       const o=JSON.parse(s);
-      masterRawB64=o.k;
-      masterKey=await C.importMaster(masterRawB64);
-      currentUser=o.u;
-      await load();
-      enterApp();
-      return;
+      const uRaw=await store.get(K_USERS);
+      const uObj=uRaw?JSON.parse(uRaw):null;
+      if(!o || !o.u || !o.k || !uObj || !uObj[o.u]){
+        await store.del(K_SESS);
+      } else {
+        masterRawB64=o.k;
+        masterKey=await C.importMaster(masterRawB64);
+        currentUser=o.u;
+        await load();
+        enterApp();
+        return;
+      }
     }
   }catch(e){ await store.del(K_SESS); }
   const users = await store.get(K_USERS);
