@@ -1,9 +1,10 @@
 /* Service Worker - Levantamientos OPS/KOICA - v2 */
-const CACHE="lev-v10";
+const CACHE="lev-v11";
 const ASSETS=[
   './',
   './index.html',
   './diag.html',
+  './recover.html',
   './levantamiento-sip.html',
   './levantamiento-insumos.html',
   './levantamiento-personal-aipeo.html',

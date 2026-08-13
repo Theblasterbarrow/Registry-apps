@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Recuperación de datos · Levantamientos</title>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;background:#12233A;color:#F5F1EA;
+  padding:18px;margin:0;line-height:1.5}
+h1{font-size:1.15rem;margin:0 0 6px}
+.sub{font-size:.8rem;color:#9fc3c9;margin-bottom:16px}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
+  border-radius:10px;padding:14px;margin-bottom:12px}
+.card h2{font-size:.95rem;margin:0 0 10px;color:#7ED3B2}
+input,select{width:100%;padding:12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.08);color:#fff;font-size:16px;margin-bottom:10px;box-sizing:border-box}
+button{width:100%;padding:13px;border-radius:8px;border:none;font-weight:700;
+  font-size:.95rem;margin-top:6px;cursor:pointer}
+.b1{background:#2A9D8F;color:#fff}
+.b2{background:#C8964A;color:#12233A}
+.b3{background:transparent;color:#9fc3c9;border:1.5px solid rgba(255,255,255,.3)}
+pre{font-family:ui-monospace,Menlo,monospace;font-size:11px;white-space:pre-wrap;
+  word-break:break-all;margin:8px 0 0;color:#c2cdd8}
+.ok{color:#7ED3B2;font-weight:700}
+.bad{color:#ff9b9b;font-weight:700}
+.warn{color:#C8964A;font-weight:700}
+.res{border-top:1px solid rgba(255,255,255,.15);margin-top:12px;padding-top:12px}
+</style>
+</head>
+<body>
+<h1>🛟 Recuperación de datos</h1>
+<div class="sub">Lee los respaldos internos y restaura la versión con más información.</div>
+
+<div class="card">
+  <h2>1. Identifícate</h2>
+  <select id="app">
+    <option value="sip">Levantamiento SIP+</option>
+    <option value="ins">Levantamiento de Insumos</option>
+    <option value="aipeo">Personal AIPEO</option>
+    <option value="dom">Usuarios de Dominio</option>
+  </select>
+  <input type="text" id="usr" placeholder="Usuario" autocomplete="off">
+  <input type="password" id="pss" placeholder="Contraseña">
+  <button class="b1" onclick="analizar()">🔍 Analizar respaldos</button>
+  <pre id="msg"></pre>
+</div>
+
+<div class="card" id="resCard" style="display:none">
+  <h2>2. Contenido encontrado</h2>
+  <pre id="res"></pre>
+  <div class="res" id="acciones"></div>
+</div>
+
+<div class="card">
+  <h2>Descargar copia sin restaurar</h2>
+  <pre>Genera un archivo con lo recuperado, para guardarlo aparte antes de tocar nada.</pre>
+  <button class="b3" onclick="descargar()" id="btnDl" disabled>⬇ Descargar lo recuperado</button>
+</div>
+
+<script>
+const enc=new TextEncoder(), dec=new TextDecoder();
+function b64(b){const u=new Uint8Array(b);let s='';const CH=0x8000;
+  for(let i=0;i<u.length;i+=CH){s+=String.fromCharCode.apply(null,u.subarray(i,i+CH));}return btoa(s);}
+function ub64(s){return Uint8Array.from(atob(s),c=>c.charCodeAt(0));}
+async function kek(p,salt){
+  const base=await crypto.subtle.importKey('raw',enc.encode(p),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},
+    base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function dec1(k,payload){
+  const o=JSON.parse(payload);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:ub64(o.iv)},k,ub64(o.ct));
+  return dec.decode(pt);
+}
+async function enc1(k,txt){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,enc.encode(txt));
+  return JSON.stringify({iv:b64(iv),ct:b64(ct)});
+}
+
+let ESTADO=null;
+
+function contar(o){
+  if(!o) return {c:0,detalle:'ilegible'};
+  const cs=o.centros||[];
+  let sub=0, fotos=0;
+  cs.forEach(function(c){
+    (c.equipos||[]).forEach(function(e){ sub++; fotos+=(e.fotos||[]).length; });
+    if(c.red&&c.red.fotos) fotos+=c.red.fotos.length;
+    const d=c.det||{};
+    Object.keys(d).forEach(function(k){ sub++; fotos+=((d[k]&&d[k].fotos)||[]).length; });
+    if(c.nevera&&c.nevera.fotoId) fotos++;
+    (c.deptos||[]).forEach(function(dd){ sub+=(dd.personal||[]).length; });
+    sub+=(c.personal||[]).length;
+  });
+  return {c:cs.length, sub:sub, fotos:fotos,
+    nombres:cs.slice(0,8).map(function(x){return x.nombre||'(sin nombre)';}).join(', ')};
+}
+
+async function analizar(){
+  const app=document.getElementById('app').value;
+  const u=document.getElementById('usr').value.trim().toLowerCase();
+  const p=document.getElementById('pss').value;
+  const msg=document.getElementById('msg');
+  msg.innerHTML='Analizando…';
+  try{
+    const uRaw=localStorage.getItem(app+'-users');
+    if(!uRaw){ msg.innerHTML='<span class="bad">No hay cuentas en esta aplicación.</span>'; return; }
+    const users=JSON.parse(uRaw);
+    if(!users[u]){ msg.innerHTML='<span class="bad">Usuario no encontrado. Cuentas: '+Object.keys(users).join(', ')+'</span>'; return; }
+    let master;
+    try{
+      const k=await kek(p, ub64(users[u].pw.salt));
+      master=await dec1(k, users[u].pw.wrap);
+    }catch(e){ msg.innerHTML='<span class="bad">Contraseña incorrecta.</span>'; return; }
+    const mk=await crypto.subtle.importKey('raw',ub64(master),{name:'AES-GCM'},false,['encrypt','decrypt']);
+
+    const out=[];
+    const cand={};
+    for(const par of [['datos',app+'-data'],['respaldo',app+'-data-bak']]){
+      const raw=localStorage.getItem(par[1]);
+      if(!raw){ out.push(par[0]+': (vacío)'); continue; }
+      try{
+        const o=JSON.parse(await dec1(mk, raw));
+        const n=contar(o);
+        cand[par[0]]={obj:o,n:n};
+        out.push(par[0]+': '+n.c+' centro(s), '+n.sub+' registro(s), '+n.fotos+' foto(s)');
+        if(n.nombres) out.push('    '+n.nombres);
+      }catch(e){ out.push(par[0]+': NO se pudo descifrar ('+e.name+')'); }
+    }
+    ESTADO={app:app,mk:mk,cand:cand};
+    document.getElementById('res').textContent=out.join('\n');
+    document.getElementById('resCard').style.display='block';
+    document.getElementById('btnDl').disabled=false;
+
+    // recomendación
+    const a=cand['datos'], b=cand['respaldo'];
+    let mejor=null, cual='';
+    if(a&&b){ if(b.n.c>a.n.c || (b.n.c===a.n.c && b.n.sub>a.n.sub)){ mejor=b; cual='respaldo'; } else { mejor=a; cual='datos'; } }
+    else if(b){ mejor=b; cual='respaldo'; }
+    else if(a){ mejor=a; cual='datos'; }
+
+    const acc=document.getElementById('acciones');
+    if(!mejor){ acc.innerHTML='<span class="bad">No se pudo leer ninguna copia.</span>'; msg.innerHTML=''; return; }
+    acc.innerHTML='<span class="ok">Recomendado: usar la copia de <b>'+cual+'</b> ('+mejor.n.c+' centros).</span>'+
+      '<button class="b2" onclick="restaurar(\''+cual+'\')">♻ Restaurar desde '+cual+'</button>'+
+      (a&&b?'<button class="b3" onclick="restaurar(\''+(cual==='datos'?'respaldo':'datos')+'\')">Usar la otra copia</button>':'');
+    msg.innerHTML='<span class="ok">Análisis completo.</span>';
+  }catch(e){
+    msg.innerHTML='<span class="bad">Error: '+(e.message||e)+'</span>';
+  }
+}
+
+async function restaurar(cual){
+  if(!ESTADO || !ESTADO.cand[cual]){ alert('Nada que restaurar.'); return; }
+  const n=ESTADO.cand[cual].n;
+  if(!confirm('Restaurar '+n.c+' centro(s) desde "'+cual+'".\n\nEsto reemplazará los datos actuales de la aplicación. ¿Continuar?')) return;
+  try{
+    const txt=JSON.stringify(ESTADO.cand[cual].obj);
+    const cif=await enc1(ESTADO.mk, txt);
+    // conservar lo actual como respaldo antes de escribir
+    const actual=localStorage.getItem(ESTADO.app+'-data');
+    if(actual) localStorage.setItem(ESTADO.app+'-data-prev', actual);
+    localStorage.setItem(ESTADO.app+'-data', cif);
+    localStorage.removeItem(ESTADO.app+'-sess');
+    alert('✓ Restaurado: '+n.c+' centro(s).\n\nAbre la aplicación e inicia sesión. EXPORTA UN RESPALDO de inmediato desde ⚙.');
+  }catch(e){ alert('No se pudo restaurar: '+(e.message||e)); }
+}
+
+async function descargar(){
+  if(!ESTADO){ return; }
+  const bk={app:ESTADO.app,formato:'recuperacion',fecha:new Date().toISOString(),
+    datos:localStorage.getItem(ESTADO.app+'-data'),
+    respaldo:localStorage.getItem(ESTADO.app+'-data-bak'),
+    users:localStorage.getItem(ESTADO.app+'-users'),
+    descifrado:{}};
+  Object.keys(ESTADO.cand).forEach(function(k){ bk.descifrado[k]=ESTADO.cand[k].obj; });
+  const blob=new Blob([JSON.stringify(bk)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='recuperacion-'+ESTADO.app+'-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1500);
+}
+</script>
+</body>
+</html>
