@@ -1,19 +1,19 @@
 {
-  "fecha_utc": "2026-08-06T15:34:50.243037+00:00",
+  "fecha_utc": "2026-08-13T14:11:16.902307+00:00",
   "autor": "Darien Gómez",
-  "version": "3.0 (proteccion de datos, WiFi, galeria, export por centro)",
+  "version": "3.1 (4 apps: + usuarios de dominio)",
   "obras": [
     {
       "archivo": "index.html",
-      "bytes": 2177,
-      "sha256": "d1301cf849864dd7ea0ff73b1daf93eb4722eceea27daa74bb464cb44fd25be3",
-      "sha512": "65f44c2912053201d896c543a1188e5a98fd8dca71c3e4184ba19a334b7990074dc8ebcea9c4fc7d2cdda92cd574a31de6197b07fe872ff6ea7c9afa9ff0c218"
+      "bytes": 2340,
+      "sha256": "baa4e88817d5e7216b3e5e8235faac9b532a7e1d538b987f9c066b92ec862e7a",
+      "sha512": "323a871025704749015905ff49670edfa1825cd4e5ac7dd3f1cba8a420d4be75c3cd28d08082377529a2a1791c948f608f19e5964a040fb80be38b8a2135f91e"
     },
     {
       "archivo": "levantamiento-insumos.html",
-      "bytes": 953298,
-      "sha256": "53553ff0a5afa4558f54edea846c9a21aa91b8af48d2429d1acccfce42e651de",
-      "sha512": "e8ae0cf77e05a5e6451c91fcfd1c262321f179d4664c1440590e32bd7e9f80001efe9355896d01bbe1ca4c328f47540a37905e242137537e55f2cc9fa83613f1"
+      "bytes": 955169,
+      "sha256": "13b6d20b099afe908f50ee1b3407be827009408af8d0befb666d0f35deef4f5a",
+      "sha512": "cb8e278b8202c6e9506de8eaf0c64c325c628c5d70cc08961d6a6bcd44458dfff4f9993eb4fb10c596176123059c4a4c8fe912811cb0c4444bed7189a9048e8c"
     },
     {
       "archivo": "levantamiento-personal-aipeo.html",
@@ -28,11 +28,17 @@
       "sha512": "350acd1642f8032c15257304a2fe512bb6bbe111f0e29162f3c54bae321252dd85262ff7ba42b775904123b072de27926aea1b9d80ef1304e292ecbeb7655f11"
     },
     {
+      "archivo": "levantamiento-usuarios-dominio.html",
+      "bytes": 942333,
+      "sha256": "220400fef37ba72125cbbed05f291b179746bb5a702db57deff9e555c09e13d0",
+      "sha512": "f0dfb07886c1740485a13e39cd576061d11eb70674e3a75f008b6b38a1f5562702d375c2f5dae125c9b824fad886ed7711296f0f1b9551956f63538f629c2d31"
+    },
+    {
       "archivo": "sw.js",
-      "bytes": 1251,
-      "sha256": "48a14521a6fa5e67c811471be322a35d5b4db2b3990bb0ffce88d720d7e296af",
-      "sha512": "65a2d871a7c3e14d1ff881f97217fc65fee9a191652b174bab8d390088b99df41bbf0b93e7387dd3c2bac444df6ed658349b6bf013055d2900d53ad7ea4c8e98"
+      "bytes": 1330,
+      "sha256": "a91f064c265715230dd6ca349f19e9c00eb7989f8ba04f01ee331835f1149eab",
+      "sha512": "b4b6b4cbf042b33a5bf49e85e0b6a0ebd8194c3cba22ead202f699c89513be370f01eb6755ba312c005d6f5af71acdbb723e9bdac2702932a24b16b5faed6ed4"
     }
   ],
-  "hash_maestro_conjunto": "5edf74201c92c51c6476c1ec225f9cdc47793ed8eb6407cf58a21820821ec6b9"
+  "hash_maestro_conjunto": "d1fe9fb3cefabeeb58b152d4a3a9c20bc1af8cef88d13a88c3fb0c2418c19f05"
 }
