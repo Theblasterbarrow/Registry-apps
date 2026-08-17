@@ -301,6 +301,7 @@ textarea{min-height:70px;resize:vertical}
       <button class="btn btn-teal btn-block" onclick="doLogin()">Iniciar sesión</button>
       <div class="links">
         <button onclick="showAuth('reset')">Olvidé mi contraseña</button>
+        <button onclick="showAuth('setup')">＋ Registrar un nuevo usuario</button>
         <button onclick="reiniciarCuentas()">Problemas para entrar — reiniciar esta aplicación</button>
       </div>
     </div>
@@ -782,7 +783,16 @@ async function doSetup(){
   }
 
   const yaHayDatos = await store.get(K_DATA);
-  if(yaHayDatos && !confirm('Este dispositivo ya tiene datos guardados de otra cuenta. Crear una cuenta nueva los dejara INACCESIBLES. Continuar de todos modos?')){
+  const yaHayUsuarios = await store.get(K_USERS);
+  let existentes = null;
+  if(yaHayUsuarios){ try{ existentes = JSON.parse(yaHayUsuarios); }catch(e){ existentes = null; } }
+  if(existentes && Object.keys(existentes).length){
+    if(!confirm('Ya existen cuentas en este dispositivo ('+Object.keys(existentes).join(', ')+
+       ').\n\nSi continuas, esas cuentas y sus datos quedaran INACCESIBLES para siempre, a menos que tengas un respaldo exportado.\n\nContinuar de todos modos?')){
+      msg.textContent='Operacion cancelada.';
+      return;
+    }
+  } else if(yaHayDatos && !confirm('Este dispositivo ya tiene datos guardados de otra cuenta. Crear una cuenta nueva los dejara INACCESIBLES. Continuar de todos modos?')){
     msg.textContent='Operacion cancelada.';
     return;
   }
@@ -791,7 +801,7 @@ async function doSetup(){
   masterRawB64=CryptoBox.b64(raw);
   masterKey=await importMaster(masterRawB64);
   const rc=genRC();
-  const users={};
+  const users={};   // se reemplaza intencionalmente: el usuario confirmo el reinicio arriba
   users[u]={ pw: await wrapMasterFor(p), rc: await wrapMasterFor(rc) };
   await saveUsers(users);
   DB = migrated || { centros: [] };

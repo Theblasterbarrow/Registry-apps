@@ -1,7 +1,7 @@
 {
-  "fecha_utc": "2026-08-13T16:00:00.058400+00:00",
+  "fecha_utc": "2026-08-17T23:42:56.384740+00:00",
   "autor": "Darien Gómez",
-  "version": "3.4 (recuperacion)",
+  "version": "3.5 (boton registrar, doSetup seguro)",
   "obras": [
     {
       "archivo": "diag.html",
@@ -15,23 +15,23 @@
     },
     {
       "archivo": "levantamiento-insumos.html",
-      "bytes": 956425,
-      "sha256": "df5f9e26c7a846b9b2e25581990c721802c6fa8838d025f41bce396f8cf4b94f"
+      "bytes": 957250,
+      "sha256": "ad917b011975e5546c716a5a286b42f43cf8f3579e8aedbea25b171031cf8f7f"
     },
     {
       "archivo": "levantamiento-personal-aipeo.html",
-      "bytes": 944127,
-      "sha256": "c3f278002d3df2b4906585ca7525849be996d3acf8d9bd1838394cb8303327e3"
+      "bytes": 944845,
+      "sha256": "11ebab3d97a1d5516b88ac1e9e87b93c4c1330c9afa486636487baa8626b36ab"
     },
     {
       "archivo": "levantamiento-sip.html",
-      "bytes": 965780,
-      "sha256": "a4b7c409b8428a9212c7322f34f84f8443fc960301f4452286289c8673effe00"
+      "bytes": 966498,
+      "sha256": "1742042493c00d12799789edfe08e00a40909e4a92b9c2fdc1d7772d678f724d"
     },
     {
       "archivo": "levantamiento-usuarios-dominio.html",
-      "bytes": 943820,
-      "sha256": "fecf0f583a0f5a143f8ddffe1a7f5741528121c18cce5aadf3a293839b6cbd2b"
+      "bytes": 944538,
+      "sha256": "817f70d635cbbe11126c398059873047c63b00146f8cb8080b09d97a130b0513"
     },
     {
       "archivo": "recover.html",
@@ -41,8 +41,8 @@
     {
       "archivo": "sw.js",
       "bytes": 1368,
-      "sha256": "15b212913d886942783bb12395beb748f90b646e0eced0f58ab3e54fda39b67b"
+      "sha256": "06c8ef6da82ce7fda018208729e7640de2fb822feac6f6abf46b303e7a8384c3"
     }
   ],
-  "hash_maestro_conjunto": "335d0fbeb4c346649834b2962680058c78a990d1128a122d1d38d12f9926149d"
+  "hash_maestro_conjunto": "86b9af0cfa84f592829273614dd62615f2767b1397c3bd8fbb6301178ec686bd"
 }
