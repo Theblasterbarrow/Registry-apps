@@ -327,8 +327,8 @@ textarea{min-height:70px;resize:vertical}
     <input type="text" id="cSearch" placeholder="🔎 Buscar centro, municipio o código..." autocomplete="off">
     <div class="filterrow" id="fProv">
       <button type="button" class="fchip prov on" data-v="">Todas</button>
-      <button type="button" class="fchip prov" data-v="Dajabón">Dajabón</button>
-      <button type="button" class="fchip prov" data-v="Elías Piña">Elías Piña</button>
+      <button type="button" class="fchip prov" data-v="Santo Domingo">Santo Domingo</button>
+      <button type="button" class="fchip prov" data-v="Otras">Otras</button>
     </div>
     <div class="filterrow" id="fTipo">
       <button type="button" class="fchip tipo on" data-v="">Todo tipo</button>
@@ -360,13 +360,13 @@ textarea{min-height:70px;resize:vertical}
     <fieldset><legend>Datos del centro de salud</legend>
       <div class="row2">
         <div><label>Provincia</label>
-          <select id="f_provincia"><option>Dajabón</option><option>Elías Piña</option><option>Otra</option></select></div>
+          <select id="f_provincia"><option>Santo Domingo</option><option>Otra</option></select></div>
         <div><label>Municipio</label><input type="text" id="f_municipio"></div>
       </div>
       <label>Centro (lista oficial OPS)</label>
       <select id="f_censel"><option value="">— Seleccionar de la lista —</option></select>
       <label>Nombre del centro *</label>
-      <input type="text" id="f_nombre" placeholder="Ej.: UNAP Los Cerezos">
+      <input type="text" id="f_nombre" placeholder="Ej.: Hospital Materno Infantil San Lorenzo de los mina">
       <label>Código del establecimiento (SNS)</label>
       <input type="text" id="f_codigo" placeholder="Código oficial del centro">
       <label>Dirección del centro</label>
@@ -487,7 +487,7 @@ let masterKey=null, masterRawB64=null, currentUser=null;
 let DB={centros:[]};
 let currentId=null;
 let deptos=[];   // [{nombre:'', personal:[{nombre,telefono,cargo}]}]
-const CARGOS_DEF=['Médico General','Médico Especialista','Enfermera/o','Auxiliar de enfermería',
+const CARGOS_DEF=['Auxiliar de Facturación','Médico General','Médico Especialista','Enfermera/o','Auxiliar de enfermería',
   'Bioanalista','Farmacéutico/a','Recepción / Admisión','Estadística','Archivo',
   'Administración','Contabilidad','Recursos Humanos','Tecnología','Dirección'];
 const DEPTOS_DEF=['Dirección','Administración','Recursos Humanos','Contabilidad','Tecnología',
